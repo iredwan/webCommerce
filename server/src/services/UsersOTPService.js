@@ -66,7 +66,7 @@ export const UserOTPService = async (req) => {
         { phone: contact },
         { 
           $set: { 
-            otp: null, 
+            otp, 
             otpMethod: "sms",
             otpExpiry 
           },
@@ -95,96 +95,6 @@ export const UserOTPService = async (req) => {
   }
 };
 
-
-export const passwordUpdateOTPService = async(req) =>{
-  try {
-      let contact = req.body.contact;
-      let user, method;
-
-      const existingUser = await UserOTPModel.find({$or: [{ email: contact }, { phone: contact }]});
-
-      if (existingUser.length = 0) {
-          return { status: false, msg: "User not found" };
-      }
-      
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      // Determine contact type
-      if (contact.includes("@")) {
-        user = await UserOTPModel.findOneAndUpdate(
-          { email: contact },
-          { otp, otpMethod: "email" },
-          { upsert: true, new: true }
-        );
-        method = "email";
-        await SendEmail(contact, `Your OTP: ${otp}`, "OTP Verification");
-      } else {
-        user = await UserOTPModel.findOneAndUpdate(
-          { phone: contact },
-          { otp, otpMethod: "sms" },
-          { upsert: true, new: true }
-        );
-        method = "sms";
-        await SendSMS(contact, `Your OTP: ${otp}`); // Implement SMS service
-      }
-  
-      return { status: true, method };
-    } catch (error) {
-      return { status: false, error: "Failed to send OTP" };
-    }
-}
-
-
-export const VerifyOTPServic = async(req) =>{
-
-    try {
-        let reqBody = req.body;
-        let contact=reqBody.contact;
-        let otp=reqBody.otp;
-
-        // User Count
-        const total = await UserOTPModel.findOne({
-            $or: [{ email: contact }, { phone: contact }],
-            otp: otp
-          }).countDocuments();
-          
-          
-
-        if(total===1){
-
-          let user=await UserOTPModel.findOne({
-            $or: [{ email: contact }, { phone: contact }],
-            otp: otp
-          });
-          
-          // User ID Read
-            let userId = user._id;
-            let userIdTos = user._id.toString();
-            // User Role Read
-            let role= user.role;
-
-           
-
-            // User Token Create
-            let token=TokenEncode(contact,userIdTos, role)
-            // Clear OTP after verification
-            await UserOTPModel.findByIdAndUpdate(userId, { 
-            $set: { otp: "0", otpMethod: "0" }
-            });
-
-            return {status:true, message:"Valid OTP",token:token}
-
-        }
-        else{
-            return {status:false, message:"Invalid OTP",total:total}
-        }
-
-    }catch (e) {
-        return {status:false, message:"Invalid OTP", details: e.message}
-    }
-
-
-}
-
 export const VerifyOTPService = async (req, res) => {
   try {
     const { contact, otp } = req.body;
@@ -194,36 +104,36 @@ export const VerifyOTPService = async (req, res) => {
     }
 
     const user = await UserOTPModel.findOne({
-            $or: [{ email: contact }, { phone: contact }],
-            otp: otp
-          });
+      $or: [{ email: contact }, { phone: contact }],
+    });
 
-    if (!user || !user.otp) {
+    if (!user) {
+      return { status: false, message: `${contact} not found` };
+    }
+
+
+    if (!user.otp) {
       return { status: false, message: "Invalid OTP" };
     }
 
-    // Expiry check
     if (user.otpExpiry < new Date()) {
       return { status: false, message: "OTP expired" };
     }
 
-    // OTP match check
     if (user.otp !== otp) {
       return { status: false, message: "Incorrect OTP" };
     }
 
-    // Success: reset otpAttempts & set token cookie
-    const token = EncodeToken(user.email, user._id.toString(), user.role || "user");
-
+    const token = TokenEncode(user.email, user._id.toString(), user.role || "user");
 
     await UserOTPModel.updateOne(
-      { email: email.trim() },
-      { $unset: { otp: "", otpExpiry: "" }, $set: { otpAttempts: 0 } } // Clear OTP and reset attempts
+      { email: user.email.trim() },
+      { $unset: { otp: "", otpExpiry: "" }, $set: { otpAttempts: 0 } }
     );
 
     return {
       status: true,
-      token: token,
+      token,
       message: "OTP verified successfully",
     };
 

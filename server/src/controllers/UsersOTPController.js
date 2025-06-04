@@ -1,4 +1,4 @@
-import {passwordUpdateOTPService, UserOTPService, VerifyOTPService} from "../services/UsersOTPService.js";
+import {UserOTPService, VerifyOTPService} from "../services/UsersOTPService.js";
 
 
 //! user Register
@@ -7,7 +7,7 @@ export const UserOTP = async(req, res)=>{
   return res.status(200).json(result);
 }
 
-export const VerifyLogin = async(req, res)=>{
+export const VerifyOTP = async(req, res)=>{
   let result=await VerifyOTPService(req)
 
   if(result['status']==="true"){
@@ -22,15 +22,4 @@ export const VerifyLogin = async(req, res)=>{
   }else {
       return res.status(200).json(result)
   }
-}
-
-export const UserLogout = async(req, res)=>{
-  let cookieOption={expires:new data(Date.now()-24*6060*1000), httpOnly:false}
-  res.cookie('token',"",cookieOption)
-  return res.status(200).json({status:"Success"})
-}
-
-export const passwordUpdateOTP = async(req, res)=>{
-  let result = await passwordUpdateOTPService(req);
-  return res.status(200).json(result);
 }
