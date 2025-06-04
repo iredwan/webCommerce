@@ -8,8 +8,8 @@ import dotenv from "dotenv";
 
 
 //Router
-import UserOTP from "./src/routes/UserOTP.js"
-
+import UserOTP from "./src/routes/UserOTPApi.js"
+import WebColor from "./src/routes/WebColorApi.js"
 
 dotenv.config();
 const app = express();
@@ -55,7 +55,7 @@ mongoose.connect(process.env.DATABASE,{autoIndex:true}).then(()=>{
 
 //Router
 app.use("/api/user",UserOTP)
-
+app.use("/api/web-color",WebColor)
 
 
 app.use("/upload-file", express.static("uploads"));
