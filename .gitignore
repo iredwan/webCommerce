@@ -1,0 +1,23 @@
+# Ignore all files in the node_modules directory
+**node_modules/
+
+# Ignore all files in the dist directory
+**dist
+
+# Ignore all files in the .env file
+**.env
+
+# Ignore all files in the .env.local file
+.env.local  
+
+# Ignore all files in the .env.development file
+.env.development
+
+# Ignore all files in the .env.production file
+.env.production
+# Ignore all files in .next directory
+**.next/
+
+# Ignore Uploads folder
+**uploads/
+
