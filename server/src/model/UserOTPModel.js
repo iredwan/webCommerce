@@ -2,8 +2,8 @@ import mongoose from "mongoose";
 
 const userOTPSchema = new mongoose.Schema(
   {
-    email: { type: String, unique: true },
-    phone: { type: String, unique: true },
+    email: { type: String},
+    phone: { type: String},
     otp: { type: String },
     otpExpiry: {
       type: Date,

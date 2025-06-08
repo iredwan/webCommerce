@@ -2,7 +2,7 @@ import SendEmail from "../utility/emailUtility.js";
 import { sendOTP } from "../utility/smsUtility.js";
 import {TokenEncode} from "../utility/tokenUtility.js"
 import UserOTPModel from "../model/UserOTPModel.js";
-import ProfileModel from './../model/ProfileModel.js';
+import UserModel from './../model/UserModel.js';
 
 export const UserOTPService = async (req) => {
   try {
@@ -10,7 +10,7 @@ export const UserOTPService = async (req) => {
     let user, method;
 
     // Check if user exists in ProfileModel
-    const existingUser = await ProfileModel.find({
+    const existingUser = await UserModel.find({
       $or: [{ email: contact }, { phone: contact }],
     });
 
