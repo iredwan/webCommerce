@@ -37,12 +37,12 @@ app.use(cookieParser());
 const limiter=rateLimit({windowMs:process.env.REQUEST_TIME,max:process.env.REQUEST_NUMBER})
 app.use(limiter)
 
-// Cache
-if (process.env.WEB_CACHE === "false") {
-  app.disable("etag");
-} else {
-  app.set("etag", "strong"); // default
-}
+// // Cache
+// if (process.env.WEB_CACHE === "false") {
+//   app.disable("etag");
+// } else {
+//   app.set("etag", "strong"); // default
+// }
 
 // Database Connect
 mongoose.connect(process.env.DATABASE,{autoIndex:true}).then(()=>{
