@@ -11,6 +11,9 @@ import dotenv from "dotenv";
 import UserOTP from "./src/routes/UserOTPApi.js"
 import WebColor from "./src/routes/WebColorApi.js"
 import UserApi from "./src/routes/UserApi.js"
+import DivisionApi from "./src/routes/DivisionDistrictPS/DivisionApi.js"
+import DistrictApi from "./src/routes/DivisionDistrictPS/DistrictApi.js"
+import PSApi from "./src/routes/DivisionDistrictPS/PSApi.js"
 
 dotenv.config();
 const app = express();
@@ -58,6 +61,11 @@ mongoose.connect(process.env.DATABASE,{autoIndex:true}).then(()=>{
 app.use("/api/user",UserOTP)
 app.use("/api/web-color",WebColor)
 app.use("/api/user", UserApi)
+app.use("/api/division", DivisionApi)
+app.use("/api/district", DistrictApi)
+app.use("/api/ps", PSApi)
+
+
 
 app.use("/upload-file", express.static("uploads"));
 
