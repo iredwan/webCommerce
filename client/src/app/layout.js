@@ -1,9 +1,8 @@
 import { Poppins } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import ThemeApplier from "@/components/ThemeApplier";
 import { Provider } from "./Provider";
+import AppWrapper from "@/components/AppWrapper"; // client wrapper
+
 const poppins = Poppins({ 
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
@@ -18,14 +17,9 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body
-        className={`${poppins.className} antialiased bg-gray-50 dark:bg-gray-900`}
-      >
+      <body className={`${poppins.className} antialiased bg-gray-50 dark:bg-gray-900`}>
         <Provider>
-        <ThemeApplier />
-        <Navbar />
-        {children}
-        <Footer />
+          <AppWrapper>{children}</AppWrapper>
         </Provider>
       </body>
     </html>
