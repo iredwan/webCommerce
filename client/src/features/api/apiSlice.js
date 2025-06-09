@@ -11,6 +11,8 @@ export const apiSlice = createApi({
     credentials: 'include', 
   }),
   tagTypes: [
+    'UserOTP',
+    'User',
     'WebColor',
   ],
   endpoints: () => ({}),
