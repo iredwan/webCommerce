@@ -14,6 +14,9 @@ export const apiSlice = createApi({
     'UserOTP',
     'User',
     'WebColor',
+    'Division',
+    'District',
+    'PoliceStation',
   ],
   endpoints: () => ({}),
 });
