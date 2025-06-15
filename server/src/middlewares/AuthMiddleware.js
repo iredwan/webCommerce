@@ -45,20 +45,22 @@ export const protect = async (req, res, next) => {
       // 5. Set user info in request
       req.user = {
         id: registeredUser._id,
-        email: registeredUser.email,
+        cus_email: registeredUser.cus_email,
         role: registeredUser.role,
       };
 
       // 6. Set user info in request headers
-      req.headers.userID = registeredUser._id;
-      req.headers.userEmail = registeredUser.email;
-      req.headers.userRole = registeredUser.role;
+      req.headers.user_id = registeredUser._id;
+      req.headers.cus_email = registeredUser.cus_email;
+      req.headers.role = registeredUser.role;
 
       return next();
     }
 
     // 6. If not in userModel, fallback to UserOTPModel
-    const otpUser = await UserOTPModel.findOne({ email: decoded.email });
+    const otpUser = await UserOTPModel.findOne({
+      $or: [{ cus_email: decoded.email }, { cus_phone: decoded.phone }],
+    });
 
     if (!otpUser) {
       return res.status(401).json({
@@ -77,7 +79,7 @@ export const protect = async (req, res, next) => {
     // 7. Set otpUser info in request
     req.user = {
       id: otpUser._id,
-      email: otpUser.email,
+      cus_email: otpUser.cus_email,
       role: decoded.role,
     };
 

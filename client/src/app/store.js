@@ -9,17 +9,20 @@ import divisionReducer from '../features/division/divisionSlice';
 import districtReducer from '../features/district/districtSlice';
 import policeStationReducer from '../features/policeStation/policeStationSlice';
 import { apiSlice } from '../features/api/apiSlice';
+import userInfoReducer from '../features/userInfo/userInfoSlice';
 // import other reducers...
 
 export const store = configureStore({
   reducer: {
     // auth: authReducer,
     user: userReducer,
+    userInfo: userInfoReducer,
     userOTP: userOTPReducer,
     division: divisionReducer,
     district: districtReducer,
     policeStation: policeStationReducer,
     webColor: webColorReducer,
+
     [apiSlice.reducerPath]: apiSlice.reducer,
     // ...
   },
