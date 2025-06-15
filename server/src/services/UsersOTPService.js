@@ -11,11 +11,11 @@ export const UserOTPService = async (req) => {
 
     // Check if user exists in ProfileModel
     const existingUser = await UserModel.find({
-      $or: [{ email: contact }, { phone: contact }],
+      $or: [{ cus_email: contact }, { cus_phone: contact }],
     });
 
     if (existingUser.length > 0) {
-      return { status: false, msg: "User exists" };
+      return { status: false, message: "User exists" };
     }
 
     // Generate OTP and set expiry
@@ -25,7 +25,7 @@ export const UserOTPService = async (req) => {
     if (contact.includes("@")) {
       // Email OTP handling
       // First find the user to check current attempts
-      const existingOTPUser = await UserOTPModel.findOne({ email: contact });
+      const existingOTPUser = await UserOTPModel.findOne({ cus_email: contact });
       
       // Check attempt limit before proceeding
       if (existingOTPUser?.otpAttempts >= 5) {
@@ -37,7 +37,7 @@ export const UserOTPService = async (req) => {
 
       // Update with new OTP and increment attempts
       user = await UserOTPModel.findOneAndUpdate(
-        { email: contact },
+        { cus_email: contact },
         { 
           $set: { 
             otp, 
@@ -53,7 +53,7 @@ export const UserOTPService = async (req) => {
       await SendEmail(contact, `Your OTP: ${otp}`, "OTP Verification");
     } else if (!isNaN(contact)) {
       // Phone OTP handling
-      const existingOTPUser = await UserOTPModel.findOne({ phone: contact });
+      const existingOTPUser = await UserOTPModel.findOne({ cus_phone: contact });
       
       if (existingOTPUser?.otpAttempts >= 5) {
         return {
@@ -63,7 +63,7 @@ export const UserOTPService = async (req) => {
       }
 
       user = await UserOTPModel.findOneAndUpdate(
-        { phone: contact },
+        { cus_phone: contact },
         { 
           $set: { 
             otp, 
@@ -104,7 +104,7 @@ export const VerifyOTPService = async (req, res) => {
     }
 
     const user = await UserOTPModel.findOne({
-      $or: [{ email: contact }, { phone: contact }],
+      $or: [{ cus_email: contact }, { cus_phone: contact }],
     });
 
     if (!user) {
@@ -124,10 +124,10 @@ export const VerifyOTPService = async (req, res) => {
       return { status: false, message: "Incorrect OTP" };
     }
 
-    const token = TokenEncode(user.email, user._id.toString(), user.role || "user");
+    const token = TokenEncode(user.cus_email, user._id.toString(), user.role || "user");
 
     await UserOTPModel.updateOne(
-      { email: user.email.trim() },
+      { cus_email: user.cus_email.trim() },
       { $unset: { otp: "", otpExpiry: "" }, $set: { otpAttempts: 0 } }
     );
 

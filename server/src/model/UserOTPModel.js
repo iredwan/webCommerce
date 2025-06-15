@@ -2,8 +2,8 @@ import mongoose from "mongoose";
 
 const userOTPSchema = new mongoose.Schema(
   {
-    email: { type: String},
-    phone: { type: String},
+    cus_email: { type: String},
+    cus_phone: { type: String},
     otp: { type: String },
     otpExpiry: {
       type: Date,
@@ -12,7 +12,7 @@ const userOTPSchema = new mongoose.Schema(
     },
     otpMethod: { type: String },
     otpAttempts: { type: Number, default: 0 },
-    role: { type: String, default: "user" },
+    role: { type: String, enum: ["customer", "admin", "manager", "seller"], default: "customer" },
   },
   {
     timestamps: true,
