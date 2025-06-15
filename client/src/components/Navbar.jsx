@@ -1,13 +1,67 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
+import { useSelector, useDispatch } from "react-redux";
 import Link from 'next/link';
-import { FaBars, FaTruck, FaUser, FaUserPlus, FaTimes } from 'react-icons/fa';
+import { usePathname } from "next/navigation";
+import { FaBars, FaTimes } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'react-toastify';
+import { useGetUserInfoQuery } from "@/features/userInfo/userInfoApiSlice";
+import { useLogoutMutation } from "@/features/user/userApiSlice";
+import {
+  setUserInfo,
+  clearUserInfo,
+  selectUserInfo,
+  selectIsAuthenticated,
+} from "@/features/userInfo/userInfoSlice";
+import { FiLogOut, FiSettings, FiUser } from 'react-icons/fi';
 
 const Navbar = () => {
+  const currentPath = usePathname();
+  const dispatch = useDispatch();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef(null);
+
+  const user = useSelector(selectUserInfo);
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+
+  const {
+    data: userData,
+    isLoading: userInfoLoading,
+    error: userInfoError,
+    isError: isUserInfoError,
+  } = useGetUserInfoQuery(undefined, {
+    skip: false,
+    refetchOnWindowFocus: false,
+    refetchOnMountOrArgChange: true,
+  });
+
+  useEffect(() => {
+    if (userData?.status && userData?.user) {
+      dispatch(setUserInfo(userData.user));
+    } else if (userData?.status === false) {
+      dispatch(clearUserInfo());
+    }
+    if (userInfoError && userInfoError.status !== 401) {
+      toast.error("Failed to load user info.");
+    }
+  }, [userData, userInfoError, dispatch]);
+
+  const [logoutUser] = useLogoutMutation();
+
+  const logOutFunction = async () => {
+    try {
+      const result = await logoutUser().unwrap();
+      dispatch(clearUserInfo());
+      toast.success(result?.message || "Logout successful");
+      window.location.href = "/";
+    } catch (error) {
+      toast.error("Logout failed. Please try again.");
+    }
+  };
+
+
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -37,11 +91,20 @@ const Navbar = () => {
 
   const closeMenu = () => setIsMenuOpen(false);
 
+  const userRole = user?.role;
+  const roleRoutes ={
+    admin: "/dashboard/admin",
+    manager: "/dashboard/manager",
+    seller: "/dashboard/seller",
+    customer: "/dashboard/customer",
+  }
+  const dashboardPath = roleRoutes[userRole];
+
   return (
     // Update the nav element to use the theme colors
     <nav className="bg-background w-full shadow-lg">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-3">
-        <div className="flex items-center justify-between">
+      <div className="max-w-[1200px] mx-auto px-4">
+        <div className="flex justify-between items-center h-16">
           {/* Logo/Brand */}
           <div className="flex-shrink-0">
             <Link href="/" className="flex items-center">
@@ -55,30 +118,75 @@ const Navbar = () => {
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-6">
-            <NavItem icon={<FaUserPlus />} text="Register" link="/register" />
-            <NavItem icon={<FaTruck />} text="Track Order" link="/track-order" />
-            <NavItem icon={<FaUser />} text="Login" link="/login" />
+          <div className="hidden md:flex items-center text-center">
+          <NavLink href="/" current={currentPath}>Home</NavLink>
+            {!isAuthenticated && (
+              <NavLink href="/user-register" current={currentPath}>Register</NavLink>
+            )}
+            {isAuthenticated && (
+              <NavLink href="/products" current={currentPath}>Products</NavLink>
+            )}
+            <NavLink href="/track-order" current={currentPath}>Track Order</NavLink>
+            <NavLink href="/about" current={currentPath}>About</NavLink>
+            <NavLink href="/contact" current={currentPath}>Contact</NavLink>
+            {dashboardPath && (
+                <NavLink href={dashboardPath} current={currentPath}>
+                  <div className="flex items-center">
+                    <FiSettings className="mr-1" /> Dashboard
+                  </div>
+                </NavLink>
+              )}
           </div>
 
-          {/* Mobile menu button */}
-          <div className="md:hidden flex items-center">
-            <NavItem icon={<FaUser />} text="Login" link="/login" />
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="inline-flex items-center justify-center p-2 rounded-md text-text focus:outline-none transition-colors"
-              aria-expanded={isMenuOpen}
-            >
-              <span className="sr-only">{isMenuOpen ? 'Close menu' : 'Open menu'}</span>
-              {isMenuOpen ? (
-                <FaTimes className="text-xl" />
-              ) : (
-                <FaBars className="text-xl" />
-              )}
-            </button>
+          <div className="hidden md:flex">
+            {isAuthenticated ? (
+              <button
+                onClick={logOutFunction}
+                className="bg-background text-text border border-text px-2 py-1.5 rounded-full text-sm shadow-md flex items-center gap-1 hover:scale-105 transition-all duration-300"
+              >
+                <FiLogOut className="h-4 w-4" /> Logout
+              </button>
+            ) : (
+              <Link
+                href="/login"
+                className="bg-background text-text border border-text px-2 py-1.5 rounded-full text-sm shadow-md flex items-center gap-1 hover:scale-105 transition-all duration-300"
+              >
+                <FiUser className="h-4 w-4" /> Login
+              </Link>
+            )}
           </div>
-        </div>
-      </div>
+
+          <div className="flex items-center gap-2 md:hidden">
+            {isAuthenticated ? (
+              <button
+                onClick={logOutFunction}
+                className="bg-background text-text border border-text px-2 py-1.5 rounded-full text-sm shadow-md flex items-center gap-1 hover:scale-105 transition-all duration-300"
+              >
+                <FiLogOut className="h-4 w-4" /> Logout
+              </button>
+            ) : (
+              <Link
+                href="/login"
+                className="bg-background text-text border border-text px-2 py-1.5 rounded-full text-sm shadow-md flex items-center gap-1 hover:scale-105 transition-all duration-300"
+              >
+                <FiUser className="h-4 w-4" /> Login
+              </Link>
+            )}
+            {isMenuOpen === false ? (
+              <div
+                onClick={() => setIsMenuOpen(true)}
+                className="">
+                  <FaBars className="h-6 w-6 text-white cursor-pointer"/>
+                </div>
+            ):(
+              <div
+                onClick={() => setIsMenuOpen(false)}
+                className="">
+                  <FaTimes className="h-6 w-6 text-white cursor-pointer"/>
+                </div>
+            )}
+          </div>
+       </div>
 
       {/* Mobile Navigation */}
       <AnimatePresence>
@@ -116,63 +224,61 @@ const Navbar = () => {
               </div>
               
               <div className="h-[calc(100%-4rem)] overflow-y-auto py-4 px-2 flex flex-col gap-4">
-                <MobileNavItem 
-                  icon={<FaUserPlus />} 
-                  text="Register" 
-                  link="/register" 
-                  onClick={closeMenu}
-                />
-                <MobileNavItem 
-                  icon={<FaTruck />} 
-                  text="Track Order" 
-                  link="/track-order" 
-                  onClick={closeMenu}
-                />
+              <MobileNavLink href="/" current={currentPath} onClick={closeMenu}>Home</MobileNavLink>
+            {!isAuthenticated && (
+              <MobileNavLink href="/user-register" current={currentPath} onClick={closeMenu}>Register</MobileNavLink>
+            )}
+            {isAuthenticated && (
+              <MobileNavLink href="/products" current={currentPath} onClick={() => setIsMenuOpen(false)}>Products</MobileNavLink>
+            )}
+            <MobileNavLink href="/track-order" current={currentPath} onClick={() => setIsMenuOpen(false)}>Track Order</MobileNavLink>
+            <MobileNavLink href="/about" current={currentPath} onClick={() => setIsMenuOpen(false)}>About</MobileNavLink>
+            <MobileNavLink href="/contact" current={currentPath} onClick={() => setIsMenuOpen(false)}>Contact</MobileNavLink>
+            {dashboardPath && (
+            <MobileNavLink href={dashboardPath} current={currentPath} onClick={() => setIsMenuOpen(false)}>
+              <div className="flex items-center">
+                <FiSettings className="mr-1" /> Dashboard
+              </div>
+            </MobileNavLink>
+          )}
               </div>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
+      </div>
     </nav>
   );
 };
 
 // Desktop Navigation Item Component
-const NavItem = ({ icon, text, link }) => {
+const NavLink = ({ href = '/', current, children }) => {
+  const isActive = href === current;
   return (
-    <Link href={link} passHref>
-      <motion.div
-        whileHover={{ y: -2 }}
-        whileTap={{ scale: 0.95 }}
-        className="group relative"
-      >
-        <div className="flex items-center space-x-2 px-2 py-1 rounded-full border border-text">
-          <span className="text-text text-sm">{icon}</span>
-          <span className="text-text font-medium text-sm">
-            {text}
-          </span>
-        </div>
-        <motion.span 
-          className="absolute bottom-0 left-0 w-0 h-0.5 bg-background group-hover:w-full transition-all duration-300"
-          initial={{ width: 0 }}
-          whileHover={{ width: '100%' }}
-        />
-      </motion.div>
+    <Link
+      href={href}
+      className={`px-2 py-1 transition-all rounded-md ${
+        isActive
+          ? "text-white text-md font-semibold border-b-2 border-white"
+          : "text-gray-100 hover:text-white text-md hover:font-semibold hover:border-b-2 hover:border-white"
+      }`}
+    >
+      {children}
     </Link>
   );
 };
 
 // Mobile Navigation Item Component
-const MobileNavItem = ({ icon, text, link, onClick }) => {
+const MobileNavLink = ({ href, current, children, onClick }) => {
+  const isActive = href === current;
   return (
-    <Link href={link} passHref>
+    <Link href={href} passHref>
       <motion.div
         whileTap={{ scale: 0.95 }}
         className="flex items-center px-2 py-1 text-text rounded-xl border-b-2 border-text"
         onClick={onClick}
       >
-        <span className="mr-4 text-md">{icon}</span>
-        <span className="font-medium text-md">{text}</span>
+        <span className="font-medium text-md">{children}</span>
       </motion.div>
     </Link>
   );
