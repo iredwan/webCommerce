@@ -5,6 +5,15 @@ import { deleteUserService, getAllUsersService, getUserByIDService, getUserServi
 //! User Register
 export const userRegister = async(req, res)=>{
   let result = await userRegisterService(req);
+  // Clear the cookie named "token"
+  res.clearCookie("token", {
+    httpOnly: true,
+    // secure: process.env.NODE_ENV === "production",
+    // sameSite: "Strict",
+    secure: false,
+    sameSite: "Lax",
+  });
+  
   return res.status(200).json(result);
 };
 

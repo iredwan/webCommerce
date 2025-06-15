@@ -2,6 +2,7 @@ import { Poppins } from "next/font/google";
 import "./globals.css";
 import { Provider } from "./Provider";
 import AppWrapper from "@/components/AppWrapper"; // client wrapper
+import Toast from "../utils/toast";
 
 const poppins = Poppins({ 
   subsets: ['latin'],
@@ -19,6 +20,7 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body className={`${poppins.className} antialiased bg-gray-50 dark:bg-gray-900`}>
         <Provider>
+          <Toast />
           <AppWrapper>{children}</AppWrapper>
         </Provider>
       </body>

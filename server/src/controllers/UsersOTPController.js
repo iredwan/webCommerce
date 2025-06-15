@@ -9,17 +9,17 @@ export const UserOTP = async(req, res)=>{
 
 export const VerifyOTP = async(req, res)=>{
   let result=await VerifyOTPService(req)
-
-  if(result['status']==="true"){
-
-      // Cookies Option
-      let cookieOption={expires:new Date(Date.now()+24*60*60*1000), httpOnly:false}
-
-      // Set Cookies With Response
-      res.cookie('token',result['token'],cookieOption)
-      return res.status(200).json(result)
-
-  }else {
-      return res.status(200).json(result)
+  if (result.status && result.token) {
+    // Set the token cookie
+    res.cookie("token", result.token, {
+      httpOnly: true,
+      // secure: process.env.NODE_ENV === "production",
+      // sameSite: "Strict",
+      secure: false,
+      sameSite: "Lax",
+      maxAge: 2592000000, // 30 days  
+      path: "/",
+    });
   }
+  return res.status(result.status ? 200 : 401).json(result);
 }

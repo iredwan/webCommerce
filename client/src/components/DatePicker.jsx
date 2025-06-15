@@ -10,7 +10,7 @@ const CustomDatePicker = ({
   name,
   formData,
   setFormData,
-  errors = {},
+  errors = null,
   placeholder = "DD/MM/YYYY",
   dateFormat = "dd/MM/yyyy",
   maxDate = new Date(),
@@ -20,13 +20,13 @@ const CustomDatePicker = ({
   showMonthDropdown = false,
   scrollableYearDropdown = true,
   yearDropdownItemNumber = 100,
-  className = ""
+  className = "",
+  onChange
 }) => {
   const [selectedDate, setSelectedDate] = useState(null);
 
   // Extract the field name and initial value from formData
   const fieldName = name || 'date';
-  const errorMessage = errors[fieldName] || '';
 
   // Initialize from formData if it exists
   useEffect(() => {
@@ -48,8 +48,18 @@ const CustomDatePicker = ({
       // Format the date to dd/MM/yyyy for storage
       const formattedDate = format(date, 'dd/MM/yyyy');
       setFormData(prev => ({ ...prev, [fieldName]: formattedDate }));
+      
+      // Call the external onChange handler if provided
+      if (onChange) {
+        onChange(formattedDate);
+      }
     } else {
       setFormData(prev => ({ ...prev, [fieldName]: '' }));
+      
+      // Call the external onChange handler with empty value
+      if (onChange) {
+        onChange('');
+      }
     }
   };
 
@@ -57,7 +67,7 @@ const CustomDatePicker = ({
     <div className={`form-group ${className}`}>
       {label && (
         <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
-          {label} {required && <span className="text-red-500">*</span>}
+          {label}
         </label>
       )}
       <div className="relative">
@@ -74,7 +84,7 @@ const CustomDatePicker = ({
           maxDate={maxDate}
           minDate={minDate}
           wrapperClassName="w-full"
-          className={`w-full px-4 py-2.5 pr-20 border ${errors.dob ? 'border-red-500' : 'border-neutral-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-300 focus:border-transparent transition-all bg-white dark:bg-gray-700 dark:text-white dark:border-gray-300`}
+          className={`w-full px-4 py-2.5 pr-20 border ${errors ? 'border-red-500' : 'border-neutral-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-300 focus:border-transparent transition-all bg-white dark:bg-gray-700 dark:text-white dark:border-gray-300`}
         />
         <div
           onClick={() => document.getElementById(fieldName).focus()}
@@ -85,7 +95,7 @@ const CustomDatePicker = ({
           </svg>
         </div>
       </div>
-      {errorMessage && <span className="text-red-500 text-sm mt-1 block">{errorMessage}</span>}
+      {errors && <span className="text-red-500 text-sm mt-1 block">{errors}</span>}
     </div>
   );
 };

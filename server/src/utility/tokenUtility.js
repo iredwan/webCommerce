@@ -6,7 +6,7 @@ export const TokenEncode = (email,user_id, role) => {
     let key = process.env.JWT_KEY;
     let expire = process.env.JWT_EXPIRE_TIME;
     
-    let payload = { email,user_id:user_id, role }; 
+    let payload = { email,user_id: user_id, role }; 
     return jwt.sign(payload, key, { expiresIn: expire });
   };
   

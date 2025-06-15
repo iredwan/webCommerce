@@ -26,7 +26,7 @@ const DataSchema = new mongoose.Schema(
     cus_division: { type: String, required: true},
     cus_district: { type: String, required: true},
     cus_police_station: { type: String, required: true},
-    cus_union_ward: { type: String, required: true},
+    cus_union_ward: { type: String},
     cus_village: { type: String, required: true},
 
     //Shipping Information
@@ -34,9 +34,11 @@ const DataSchema = new mongoose.Schema(
     ship_division: { type: String, required: true},
     ship_district: { type: String, required: true},
     ship_police_station: { type: String, required: true},
-    ship_union_ward: { type: String, required: true},
+    ship_union_ward: { type: String},
     ship_village: { type: String, required: true},
     ship_phone: { type: String},
+
+    
     isVerified: { type: Boolean, default: false},
     editBy: { type: mongoose.Schema.Types.ObjectId, ref: "users"}
   },
