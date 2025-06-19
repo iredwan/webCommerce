@@ -4,6 +4,7 @@ import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ThemeApplier from "@/components/ThemeApplier";
+import BottomNavbar from "@/components/BottomNavbar";
 
 export default function AppWrapper({ children }) {
   const [isThemeReady, setIsThemeReady] = useState(false);
@@ -24,6 +25,7 @@ export default function AppWrapper({ children }) {
         <>
           <Navbar />
           {children}
+          <BottomNavbar />
           <Footer />
         </>
       )}
