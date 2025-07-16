@@ -37,7 +37,7 @@ export default function TopProgressBar() {
   return loading ? (
     <div className="fixed top-0 left-0 right-0 z-[1600] h-[3px] bg-transparent">
       <div
-        className="h-full bg-primary origin-left transition-all duration-100 ease-out"
+        className="h-full bg-text origin-left transition-all duration-100 ease-out"
         style={{ width: `${progress}%` }}
       />
     </div>

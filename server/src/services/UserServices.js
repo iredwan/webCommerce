@@ -27,10 +27,11 @@ export const userRegisterService = async (req) => {
 
 export const userRegisterWithRefService = async (req) => {
   try {
-    const ref_userID = req.headers.userID || req.cookies.userID;
+    const ref_userId = req.user.id
     
     let reqBody = req.body;
-    reqBody.ref_userID = ref_userID;
+    reqBody.ref_userId = ref_userId;
+    reqBody.isVerified = true;
     let data = await UserModel.create(reqBody);
     return { status: true, data: data, message: "Register successfully." };
   } catch (e) {
@@ -46,6 +47,7 @@ export const userLoginService = async (contact, password) => {
         { cus_phone: contact },
       ],
     });
+    
 
     if (!user) {
       return { status: false, message: "User not found." };
@@ -55,6 +57,7 @@ export const userLoginService = async (contact, password) => {
     if (!passwordMatch) {
       return { status: false, message: "Incorrect password." };
     }
+    
 
     const token = TokenEncode(contact, user._id.toString(), user.role);
 
@@ -69,12 +72,13 @@ export const userLoginService = async (contact, password) => {
   }
 };
 
-export const getUserByIDService = async (req) => {
+export const getUserByIdService = async (req) => {
   try {
-    let UserID = new ObjectId(req.params.id);
+    let UserId = req.params.id;
+    
 
-    let data = await UserModel.findOne({ _id: UserID })
-    .populate('ref_userID', 'cus_firstName cus_lastName cus_phone cus_email img role')
+    let data = await UserModel.findById(UserId)
+    .populate('ref_userId', 'cus_firstName cus_lastName cus_phone cus_email img role')
     .populate('editBy', 'cus_firstName cus_lastName cus_phone cus_email img role');
 
     return { status: true, data: data };
@@ -85,9 +89,9 @@ export const getUserByIDService = async (req) => {
 
 export const getUserService = async (req) => {
   try {
-    const userId = new ObjectId(req.headers.userID || req.cookies.userID);
+    const userId = new ObjectId(req.user.id);
 
-    let data = await UserModel.findOne({ _id: userId });
+    let data = await UserModel.findOne({ _Id: userId });
 
     return { status: true, data: data };
   } catch (error) {
@@ -97,27 +101,35 @@ export const getUserService = async (req) => {
 
 export const getAllUsersService = async (req) => {
   try {
-    // Get pagination parameters from query
+    // Pagination
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    // Build search query
+    // Current user
+    const userId = req.user.id;
+    const user = await UserModel.findById(userId);
+    const userRole = user?.role;
+
+    // Search Query
     let searchQuery = {};
+
     if (req.query.cus_phone) {
       searchQuery.cus_phone = { $regex: req.query.cus_phone, $options: 'i' };
     }
+
     if (req.query.cus_email) {
       searchQuery.cus_email = { $regex: req.query.cus_email, $options: 'i' };
     }
 
-    // Get total count for pagination
-    const total = await UserModel.countDocuments(searchQuery);
+    // Filter out admin and manager if current user is not admin
+    if (userRole !== 'admin') {
+      searchQuery.role = { $nin: ['admin', 'manager', 'seller'] };
+    }
 
-    // Get paginated and filtered data
-    const data = await UserModel.find(searchQuery)
-      .skip(skip)
-      .limit(limit);
+    // Count + Fetch
+    const total = await UserModel.countDocuments(searchQuery);
+    const data = await UserModel.find(searchQuery).skip(skip).limit(limit).sort({ createdAt: -1 });
 
     return {
       status: true,
@@ -126,40 +138,54 @@ export const getAllUsersService = async (req) => {
         total,
         currentPage: page,
         limit,
-        pages: Math.ceil(total / limit)
+        pages: Math.ceil(total / limit),
       },
-      message: "Users fetched successfully"
+      message: "Users fetched successfully",
     };
   } catch (e) {
     return { status: false, error: e.toString() };
   }
 };
 
+
 export const updateUserService = async (req) => {
   try {
-    let user_id = new ObjectId(req.params.id);
-    let reqBody = req.body;
-    
-    const editBy = new ObjectId(req.headers.userID || req.cookies.userID);
+    const user_Id = new ObjectId(req.params.id); 
+    const reqBody = req.body;
+
+    const editBy = new ObjectId(req.user.id);
     reqBody.editBy = editBy;
 
-   await UserModel.findOneAndUpdate(
-      { _id: user_id },
+    await UserModel.findOneAndUpdate(
+      { _id: user_Id }, 
       { $set: reqBody },
-      { upsert: true }
+      { upsert: true } 
     );
-    return { status: true, message: "Information updated successfully." };
+
+    return { status: true, message: "User information updated successfully." };
   } catch (e) {
-    return { status: false, error: e };
+    return { status: false, message: "Something went wrong", error: e.toString() };
   }
 };
 
 export const deleteUserService = async (req) => {
   try {
-    let user_id = new ObjectId(req.params.id);
-    await UserModel.deleteOne(
-      { _id: user_id },
-    );
+    const deleteId = req.params.id;
+    const userRole = req.user.id;
+
+    const user = await UserModel.findById(deleteId);
+    if (!user) {
+      return { status: false, message: "User not found." };
+    }
+
+    if (user.role === 'admin' && userRole !== 'admin') {
+      return { status: false, message: "Only admin can delete admin." };
+    }
+    
+    const result = await UserModel.findByIdAndDelete(deleteId);
+    if (!result) {
+      return { status: false, message: "User not found." };
+    }
     return { status: true, message: "User deleted successfully." };
   } catch (e) {
     return { status: false, error: e.toString() };

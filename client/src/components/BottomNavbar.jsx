@@ -19,7 +19,7 @@ const navItems = [
 const BottomNavbar = () => {
   const currentPath = usePathname();
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-background ">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-background border-t border-text rounded-t-lg">
       <ul className="flex justify-between items-center px-2 py-1">
         {navItems.map((item) => {
           const isActive = currentPath === item.href;

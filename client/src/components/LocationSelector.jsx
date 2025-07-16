@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useGetAllDivisionsQuery } from '../features/division/divisionApiSlice';
 import { useGetDistrictsByDivisionQuery } from '../features/district/districtApiSlice';
 import { useGetPoliceStationsByDistrictQuery } from '../features/policeStation/policeStationApiSlice';
@@ -12,18 +12,27 @@ const ModernLocationSelector = ({
   className = '',
   disabled = false
 }) => {
+  // Selected values
   const [divisionName, setDivisionName] = useState(initialDivisionName);
   const [districtName, setDistrictName] = useState(initialDistrictName);
   const [policeStationName, setPoliceStationName] = useState(initialPoliceStationName);
-
-  const [showDivisionDropdown, setShowDivisionDropdown] = useState(false);
-  const [showDistrictDropdown, setShowDistrictDropdown] = useState(false);
-  const [showPoliceDropdown, setShowPoliceDropdown] = useState(false);
-
+  
+  // Input values for search
   const [divisionSearchTerm, setDivisionSearchTerm] = useState('');
   const [districtSearchTerm, setDistrictSearchTerm] = useState('');
   const [policeSearchTerm, setPoliceSearchTerm] = useState('');
+  
+  // Dropdown visibility
+  const [showDivisionDropdown, setShowDivisionDropdown] = useState(false);
+  const [showDistrictDropdown, setShowDistrictDropdown] = useState(false);
+  const [showPoliceDropdown, setShowPoliceDropdown] = useState(false);
+  
+  // Track if selection was made during dropdown session
+  const divisionSelectionMade = useRef(false);
+  const districtSelectionMade = useRef(false);
+  const policeSelectionMade = useRef(false);
 
+  // API queries
   const { data: divisions = [], isLoading: divisionsLoading, error: divisionsError } = useGetAllDivisionsQuery();
   const { data: districts = [], isLoading: districtsLoading, error: districtsError } = useGetDistrictsByDivisionQuery(
     divisions.find(d => d.name === divisionName)?.divisionId,
@@ -34,13 +43,14 @@ const ModernLocationSelector = ({
     { skip: !districtName }
   );
 
-  // Update state when initial values change
+  // Sync with initial props
   useEffect(() => {
     setDivisionName(initialDivisionName);
     setDistrictName(initialDistrictName);
     setPoliceStationName(initialPoliceStationName);
   }, [initialDivisionName, initialDistrictName, initialPoliceStationName]);
 
+  // Trigger onChange when selections change
   useEffect(() => {
     onChange?.({ divisionName, districtName, policeStationName });
   }, [divisionName, districtName, policeStationName]);
@@ -83,24 +93,45 @@ const ModernLocationSelector = ({
             type="text"
             className={`${inputClass} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
             placeholder="Search for a division"
-            value={divisionSearchTerm || divisionName}
+            value={showDivisionDropdown ? divisionSearchTerm : divisionName}
             onChange={(e) => {
               if (!disabled) {
                 setDivisionSearchTerm(e.target.value);
                 setShowDivisionDropdown(true);
               }
             }}
-            onFocus={() => !disabled && setShowDivisionDropdown(true)}
-            onBlur={() => setTimeout(() => setShowDivisionDropdown(false), 150)}
+            onFocus={() => {
+              if (!disabled) {
+                setDivisionSearchTerm(divisionName);
+                setShowDivisionDropdown(true);
+                divisionSelectionMade.current = false;
+              }
+            }}
+            onBlur={() => {
+              if (!disabled) {
+                const currentSearch = divisionSearchTerm;
+                setTimeout(() => {
+                  setShowDivisionDropdown(false);
+                  if (!divisionSelectionMade.current && currentSearch === '') {
+                    setDivisionName('');
+                    setDistrictName('');
+                    setPoliceStationName('');
+                  }
+                }, 150);
+              }
+            }}
             required={required}
             disabled={disabled}
           />
           {showDivisionDropdown && !disabled && (
             <div className={dropdownClass}>
-              {renderDropdown(divisions, divisionsLoading, divisionsError, divisionSearchTerm, name => {
+              {renderDropdown(divisions, divisionsLoading, divisionsError, divisionSearchTerm, (name) => {
+                divisionSelectionMade.current = true;
                 setDivisionName(name);
                 setDistrictName('');
                 setPoliceStationName('');
+                setDivisionSearchTerm('');
+                setShowDivisionDropdown(false);
               })}
             </div>
           )}
@@ -113,25 +144,45 @@ const ModernLocationSelector = ({
         <div className="relative">
           <input
             type="text"
-            className={`${inputClass} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`${inputClass} ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${!divisionName ? 'opacity-50 cursor-not-allowed' : ''}`}
             placeholder={divisionName ? 'Search for a district' : 'Select a division first'}
-            value={districtSearchTerm || districtName}
+            value={showDistrictDropdown ? districtSearchTerm : districtName}
             onChange={(e) => {
-              if (!disabled) {
+              if (!disabled && divisionName) {
                 setDistrictSearchTerm(e.target.value);
                 setShowDistrictDropdown(true);
               }
             }}
-            onFocus={() => !disabled && setShowDistrictDropdown(true)}
-            onBlur={() => setTimeout(() => setShowDistrictDropdown(false), 150)}
+            onFocus={() => {
+              if (!disabled && divisionName) {
+                setDistrictSearchTerm(districtName);
+                setShowDistrictDropdown(true);
+                districtSelectionMade.current = false;
+              }
+            }}
+            onBlur={() => {
+              if (!disabled) {
+                const currentSearch = districtSearchTerm;
+                setTimeout(() => {
+                  setShowDistrictDropdown(false);
+                  if (!districtSelectionMade.current && currentSearch === '') {
+                    setDistrictName('');
+                    setPoliceStationName('');
+                  }
+                }, 150);
+              }
+            }}
             disabled={!divisionName || disabled}
             required={required}
           />
           {showDistrictDropdown && divisionName && !disabled && (
             <div className={dropdownClass}>
-              {renderDropdown(districts, districtsLoading, districtsError, districtSearchTerm, name => {
+              {renderDropdown(districts, districtsLoading, districtsError, districtSearchTerm, (name) => {
+                districtSelectionMade.current = true;
                 setDistrictName(name);
                 setPoliceStationName('');
+                setDistrictSearchTerm('');
+                setShowDistrictDropdown(false);
               })}
             </div>
           )}
@@ -144,24 +195,43 @@ const ModernLocationSelector = ({
         <div className="relative">
           <input
             type="text"
-            className={`${inputClass} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`${inputClass} ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${!districtName ? 'opacity-50 cursor-not-allowed' : ''}`}
             placeholder={districtName ? 'Search for a police station' : 'Select a district first'}
-            value={policeSearchTerm || policeStationName}
+            value={showPoliceDropdown ? policeSearchTerm : policeStationName}
             onChange={(e) => {
-              if (!disabled) {
+              if (!disabled && districtName) {
                 setPoliceSearchTerm(e.target.value);
                 setShowPoliceDropdown(true);
               }
             }}
-            onFocus={() => !disabled && setShowPoliceDropdown(true)}
-            onBlur={() => setTimeout(() => setShowPoliceDropdown(false), 150)}
+            onFocus={() => {
+              if (!disabled && districtName) {
+                setPoliceSearchTerm(policeStationName);
+                setShowPoliceDropdown(true);
+                policeSelectionMade.current = false;
+              }
+            }}
+            onBlur={() => {
+              if (!disabled) {
+                const currentSearch = policeSearchTerm;
+                setTimeout(() => {
+                  setShowPoliceDropdown(false);
+                  if (!policeSelectionMade.current && currentSearch === '') {
+                    setPoliceStationName('');
+                  }
+                }, 150);
+              }
+            }}
             disabled={!districtName || disabled}
             required={required}
           />
           {showPoliceDropdown && districtName && !disabled && (
             <div className={dropdownClass}>
-              {renderDropdown(policeStations, policeLoading, policeError, policeSearchTerm, name => {
+              {renderDropdown(policeStations, policeLoading, policeError, policeSearchTerm, (name) => {
+                policeSelectionMade.current = true;
                 setPoliceStationName(name);
+                setPoliceSearchTerm('');
+                setShowPoliceDropdown(false);
               })}
             </div>
           )}

@@ -1,4 +1,4 @@
-import { deleteUserService, getAllUsersService, getUserByIDService, getUserService, updateUserService, userLoginService, userRegisterService, userRegisterWithRefService } from "../services/UserServices.js";
+import { deleteUserService, getAllUsersService, getUserByIdService, getUserService, updateUserService, userLoginService, userRegisterService, userRegisterWithRefService } from "../services/UserServices.js";
 
 
 
@@ -48,9 +48,9 @@ export const userLogin = async (req, res) => {
 };
 
 
-// Get User By ID
-export const getUserByID = async(req, res)=>{
-  let result = await getUserByIDService(req);
+// Get User By Id
+export const getUserById = async(req, res)=>{
+  let result = await getUserByIdService(req);
   return res.status(200).json(result);
 };
 

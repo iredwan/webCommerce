@@ -4,7 +4,7 @@ import { FaPhone, FaEnvelope, FaMapMarkerAlt } from 'react-icons/fa';
 const Footer = () => {
   return (
     // Update the footer element to use the theme colors
-    <footer className="bg-background text-text py-12">
+    <footer className="bg-background text-text py-12 pb-20 md:pb-12">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Contact Information */}

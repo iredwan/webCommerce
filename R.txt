@@ -1,0 +1,1 @@
+create a register form using client\src\features\user\userApiSlice.js file for call API, This form will collect cus_firstName, cus_lastName, img(opsonial), cus_dob, cus_phone, cus_email, password,  data.

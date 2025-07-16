@@ -162,7 +162,7 @@ const LoginForm = () => {
                   validationErrors.contact
                     ? "border-red-300"
                     : "border-gray-300"
-                } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm`}
+                } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm`}
                 placeholder="Enter your email or phone number"
               />
               {validationErrors.contact && (
@@ -192,7 +192,7 @@ const LoginForm = () => {
                     validationErrors.password
                       ? "border-red-300"
                       : "border-gray-300"
-                  } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm`}
+                  } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm`}
                   placeholder="Password"
                 />
                 <button
@@ -224,7 +224,7 @@ const LoginForm = () => {
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500  border-gray-300 rounded"
               />
               <label
                 htmlFor="remember-me"

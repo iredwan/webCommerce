@@ -1,4 +1,5 @@
 import { Poppins } from "next/font/google";
+import 'sweetalert2/dist/sweetalert2.min.css';
 import "./globals.css";
 import { Provider } from "./Provider";
 import AppWrapper from "@/components/AppWrapper"; // client wrapper

@@ -42,12 +42,7 @@ export const userApiSlice = apiSlice.injectEndpoints({
     getAllUsers: builder.query({
       query: (params) => ({
         url: '/user/get-all-users',
-        params: {
-          page: params?.page,
-          limit: params?.limit,
-          cus_phone: params?.phone,
-          cus_email: params?.email,
-        },
+        params: params,
       }),
       providesTags: ['User'],
     }),

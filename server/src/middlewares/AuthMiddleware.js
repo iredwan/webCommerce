@@ -5,7 +5,6 @@ import { TokenDecode } from "../utility/tokenUtility.js";
 // Authentication Middleware
 export const protect = async (req, res, next) => {
   try {
-    // 1. Get token from header, cookie or bearer auth
     let token = req.headers['token'] || req.cookies?.token;
 
     if (!token && req.headers.authorization?.startsWith('Bearer')) {
@@ -19,7 +18,6 @@ export const protect = async (req, res, next) => {
       });
     }
 
-    // 2. Decode token
     const decoded = TokenDecode(token);
     if (!decoded) {
       return res.status(401).json({
@@ -28,41 +26,25 @@ export const protect = async (req, res, next) => {
       });
     }
 
+    const user = await UserModel.findById(decoded.user_id);
 
-    // 3. Try to find user in userModel (registered users)
-    const registeredUser = await UserModel.findById(decoded.user_id);
-    
-
-    if (registeredUser) {
-      // 4. Check role match
-      if (registeredUser.role !== decoded.role) {
-        return res.status(403).json({
-          status: false,
-          message: 'You are not authorized to access this resource.',
-        });
-      }
-
-      // 5. Set user info in request
+    if (user) {
       req.user = {
-        id: registeredUser._id,
-        cus_email: registeredUser.cus_email,
-        role: registeredUser.role,
+        id: user._id,
+        cus_email: user.cus_email,
+        cus_phone: user.cus_phone,
+        role: user.role,
       };
-
-      // 6. Set user info in request headers
-      req.headers.user_id = registeredUser._id;
-      req.headers.cus_email = registeredUser.cus_email;
-      req.headers.role = registeredUser.role;
-
       return next();
     }
 
-    // 6. If not in userModel, fallback to UserOTPModel
+    // fallback to OTP user
     const otpUser = await UserOTPModel.findOne({
       $or: [{ cus_email: decoded.email }, { cus_phone: decoded.phone }],
     });
 
     if (!otpUser) {
+      res.clearCookie('token');
       return res.status(401).json({
         status: false,
         message: 'The user belonging to this token no longer exists.',
@@ -76,7 +58,6 @@ export const protect = async (req, res, next) => {
       });
     }
 
-    // 7. Set otpUser info in request
     req.user = {
       id: otpUser._id,
       cus_email: otpUser.cus_email,
@@ -93,6 +74,7 @@ export const protect = async (req, res, next) => {
     });
   }
 };
+
 
 
 

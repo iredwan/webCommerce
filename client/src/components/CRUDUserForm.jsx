@@ -1,6 +1,6 @@
 'use client'
 import React, { useState, useEffect } from "react";
-import { useRegisterWithRefMutation } from "../features/user/userApiSlice";
+import { useRegisterWithRefMutation, useUpdateUserMutation } from "../features/user/userApiSlice";
 import { selectUserInfo } from '@/features/userInfo/userInfoSlice';
 import ModernLocationSelector from "./LocationSelector";
 import CustomDatePicker from "./DatePicker";
@@ -24,9 +24,10 @@ import {
 import { useSelector } from "react-redux";
 
 
-const AddUserForm = () => {
+const AddUserForm = ({ editMode = false, userData}) => {
   const router = useRouter();
   const [addUser, { isLoading }] = useRegisterWithRefMutation();
+  const [updateUser, { isLoading: isUpdating }] = useUpdateUserMutation();
   const [sameAsAddress, setSameAsAddress] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
@@ -37,29 +38,47 @@ const AddUserForm = () => {
   const userInfo = useSelector(selectUserInfo);
   const userRole = userInfo?.role;
 
-  const [formData, setFormData] = useState({
-    cus_firstName: "",
-    cus_lastName: "",
-    cus_dob: "",
-    cus_phone: "",
-    cus_email: "",
-    password: "",
-    cus_country: "Bangladesh",
-    cus_division: "",
-    cus_district: "",
-    cus_police_station: "",
-    cus_union_ward: "",
-    cus_village: "",
-    ship_country: "Bangladesh",
-    ship_division: "",
-    ship_district: "",
-    ship_police_station: "",
-    ship_union_ward: "",
-    ship_village: "",
-    ship_phone: "",
-  });
+  // All fields from UserModel.js
+  const initialFormData = {
+    role: userData.role || "customer",
+    ref_userID: userData.ref_userID || "",
+    isBlocked: userData.isBlocked || false,
+    isVerified: userData.isVerified || false,
+    editBy: userData.editBy || "",
+    img: userData.img || "default-profile.png",
+    cus_firstName: userData.cus_firstName || "",
+    cus_lastName: userData.cus_lastName || "",
+    cus_dob: userData.cus_dob || "",
+    cus_phone: userData.cus_phone || "",
+    cus_email: userData.cus_email || "",
+    password: "", // never prefill password
+    cus_country: userData.cus_country || "Bangladesh",
+    cus_division: userData.cus_division || "",
+    cus_district: userData.cus_district || "",
+    cus_police_station: userData.cus_police_station || "",
+    cus_union_ward: userData.cus_union_ward || "",
+    cus_village: userData.cus_village || "",
+    ship_country: userData.ship_country || "Bangladesh",
+    ship_division: userData.ship_division || "",
+    ship_district: userData.ship_district || "",
+    ship_police_station: userData.ship_police_station || "",
+    ship_union_ward: userData.ship_union_ward || "",
+    ship_village: userData.ship_village || "",
+    ship_phone: userData.ship_phone || "",
+  };
+
+  console.log("Initial Form Data:", initialFormData);
+  
+
+  const [formData, setFormData] = useState(initialFormData);
+
+  // Hide password fields in edit mode
+  const showPasswordFields = !editMode;
 
   const validateField = (name, value) => {
+    if (editMode && (name === "password" || name === "confirmPassword")) {
+      return null; // skip password validation in edit mode
+    }
     let error = null;
 
     switch (name) {
@@ -293,7 +312,7 @@ const AddUserForm = () => {
     }
   };
 
-   const validateForm = () => {
+  const validateForm = () => {
     const errors = {};
     const requiredFields = [
       "cus_firstName",
@@ -301,12 +320,12 @@ const AddUserForm = () => {
       "cus_dob",
       "cus_phone",
       "cus_email",
-      "password",
       "cus_division",
       "cus_district",
       "cus_police_station",
       "cus_village",
     ];
+    if (!editMode) requiredFields.push("password");
 
     // Validate required fields
     requiredFields.forEach((field) => {
@@ -360,16 +379,21 @@ const AddUserForm = () => {
     }
 
     try {
-      const response = await addUser(formData).unwrap();
+      let response;
+      if (editMode) {
+        response = await updateUser(formData).unwrap();
+      } else {
+        response = await addUser(formData).unwrap();
+      }
       if (response.status === true) {
-        toast.success("User added successfully!");
+        toast.success(editMode ? "User updated successfully!" : "User added successfully!");
         router.push(`/dashboard/${userRole}/users`);
       } else {
-        toast.error(response.message || "Failed to add user");
+        toast.error(response.message || (editMode ? "Failed to update user" : "Failed to add user"));
       }
     } catch (err) {
-      toast.error(err.data?.message || "Failed to add user");
-      console.error("Failed to add user:", err);
+      toast.error(err.data?.message || (editMode ? "Failed to update user" : "Failed to add user"));
+      console.error(editMode ? "Failed to update user:" : "Failed to add user:", err);
     }
   };
 
@@ -501,70 +525,74 @@ const AddUserForm = () => {
               )}
             </div>
             
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Password
-            </label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                name="password"
-                placeholder="Password"
-                required
-                value={formData.password}
-                onChange={handlePasswordChange}
-                className={`w-full px-4 py-2.5 pr-10 border ${
-                  validationErrors.password
-                    ? "border-red-500"
-                    : "border-neutral-300"
-                } rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-300 focus:border-transparent transition-all dark:bg-gray-700 dark:text-white`}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-              >
-                {showPassword ? <FaEyeSlash /> : <FaEye />}
-              </button>
-            </div>
-            {validationErrors.password && (
-              <p className="mt-1 text-sm text-red-500">
-                {validationErrors.password}
-              </p>
-            )}
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Confirm Password
-            </label>
-            <div className="relative">
-              <input
-                type={showConfirmPassword ? "text" : "password"}
-                name="confirmPassword"
-                placeholder="Confirm Password"
-                required
-                value={confirmPassword}
-                onChange={handleConfirmPasswordChange}
-                className={`w-full px-4 py-2.5 pr-10 border ${
-                  validationErrors.confirmPassword
-                    ? "border-red-500"
-                    : "border-neutral-300"
-                } rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-300 focus:border-transparent transition-all dark:bg-gray-700 dark:text-white`}
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-              >
-                {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
-              </button>
-            </div>
-            {validationErrors.confirmPassword && (
-              <p className="mt-1 text-sm text-red-500">
-                {validationErrors.confirmPassword}
-              </p>
-            )}
-          </div>
+          {showPasswordFields && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    placeholder="Password"
+                    required
+                    value={formData.password}
+                    onChange={handlePasswordChange}
+                    className={`w-full px-4 py-2.5 pr-10 border ${
+                      validationErrors.password
+                        ? "border-red-500"
+                        : "border-neutral-300"
+                    } rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-300 focus:border-transparent transition-all dark:bg-gray-700 dark:text-white`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                  >
+                    {showPassword ? <FaEyeSlash /> : <FaEye />}
+                  </button>
+                </div>
+                {validationErrors.password && (
+                  <p className="mt-1 text-sm text-red-500">
+                    {validationErrors.password}
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Confirm Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    name="confirmPassword"
+                    placeholder="Confirm Password"
+                    required
+                    value={confirmPassword}
+                    onChange={handleConfirmPasswordChange}
+                    className={`w-full px-4 py-2.5 pr-10 border ${
+                      validationErrors.confirmPassword
+                        ? "border-red-500"
+                        : "border-neutral-300"
+                    } rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-300 focus:border-transparent transition-all dark:bg-gray-700 dark:text-white`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                  >
+                    {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                  </button>
+                </div>
+                {validationErrors.confirmPassword && (
+                  <p className="mt-1 text-sm text-red-500">
+                    {validationErrors.confirmPassword}
+                  </p>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -760,8 +788,9 @@ const AddUserForm = () => {
           <button
             onClick={handleSubmit}
             className="bg-background text-text px-4 py-2 rounded-lg "
+            disabled={isLoading || isUpdating}
           >
-            Submit
+            {editMode ? "Update" : "Submit"}
           </button>
         </div>
       </div>

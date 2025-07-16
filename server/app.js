@@ -14,6 +14,7 @@ import UserApi from "./src/routes/UserApi.js"
 import DivisionApi from "./src/routes/DivisionDistrictPS/DivisionApi.js"
 import DistrictApi from "./src/routes/DivisionDistrictPS/DistrictApi.js"
 import PSApi from "./src/routes/DivisionDistrictPS/PSApi.js"
+import UserInfo from "./src/routes/UserInfoRoute.js"
 
 dotenv.config();
 const app = express();
@@ -64,7 +65,7 @@ app.use("/api/user", UserApi)
 app.use("/api/division", DivisionApi)
 app.use("/api/district", DistrictApi)
 app.use("/api/ps", PSApi)
-
+app.use("/api/user-info", UserInfo)
 
 
 app.use("/upload-file", express.static("uploads"));

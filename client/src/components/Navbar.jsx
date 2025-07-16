@@ -102,7 +102,7 @@ const Navbar = () => {
 
   return (
     // Update the nav element to use the theme colors
-    <nav className="bg-background w-full shadow-lg">
+    <nav className="bg-background w-full shadow-lg sticky top-0 z-50">
       <div className="max-w-[1200px] mx-auto px-4">
         <div className="flex justify-between items-center h-16">
           {/* Logo/Brand */}
