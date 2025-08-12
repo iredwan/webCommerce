@@ -55,6 +55,25 @@ const ModernLocationSelector = ({
     onChange?.({ divisionName, districtName, policeStationName });
   }, [divisionName, districtName, policeStationName]);
 
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+
+  const handleKeyDown = (e, filteredItems, onSelect) => {
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    setHighlightedIndex((prev) => (prev + 1) % filteredItems.length);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    setHighlightedIndex((prev) => (prev - 1 + filteredItems.length) % filteredItems.length);
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (highlightedIndex >= 0 && highlightedIndex < filteredItems.length) {
+      onSelect(filteredItems[highlightedIndex].name);
+      setHighlightedIndex(-1);
+    }
+  }
+};
+
+
   const inputClass =
     'w-full px-4 py-2.5 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-300 focus:border-transparent transition-all dark:bg-gray-700 dark:text-white';
 
@@ -72,15 +91,18 @@ const ModernLocationSelector = ({
     if (filtered.length === 0) return <div className="px-4 py-2 text-neutral-600 dark:text-gray-400">No matching items found</div>;
 
     return filtered.map((item, idx) => (
-      <button
-        key={item[idKey] || `item-${idx}`}
-        className="w-full text-left px-4 py-2 hover:bg-neutral-100 dark:hover:bg-gray-600 dark:text-white"
-        type="button"
-        onMouseDown={() => onSelect(item[labelKey])}
-      >
-        {item[labelKey]} {item.bengaliName ? `(${item.bengaliName})` : ''}
-      </button>
-    ));
+  <button
+    key={item[idKey] || `item-${idx}`}
+    className={`w-full text-left px-4 py-2 hover:bg-neutral-100 dark:hover:bg-gray-600 dark:text-white ${
+      highlightedIndex === idx ? 'bg-neutral-100 dark:bg-gray-600' : ''
+    }`}
+    type="button"
+    onMouseDown={() => onSelect(item[labelKey])}
+  >
+    {item[labelKey]} {item.bengaliName ? `(${item.bengaliName})` : ''}
+  </button>
+));
+
   };
 
   return (
@@ -120,6 +142,19 @@ const ModernLocationSelector = ({
                 }, 150);
               }
             }}
+            onKeyDown={(e) => {
+            const filtered = divisions.filter(item =>
+              item.name?.toLowerCase().includes(divisionSearchTerm.toLowerCase())
+            );
+            handleKeyDown(e, filtered, (name) => {
+              divisionSelectionMade.current = true;
+              setDivisionName(name);
+              setDistrictName('');
+              setPoliceStationName('');
+              setDivisionSearchTerm('');
+              setShowDivisionDropdown(false);
+            });
+          }}
             required={required}
             disabled={disabled}
           />
@@ -172,6 +207,21 @@ const ModernLocationSelector = ({
                 }, 150);
               }
             }}
+
+            onKeyDown={(e) => {
+            const filtered = districts.filter(item =>
+              item.name?.toLowerCase().includes(districtSearchTerm.toLowerCase())
+            );
+            handleKeyDown(e, filtered, (name) => {
+              districtSelectionMade.current = true;
+              setDistrictName(name);
+              setPoliceStationName('');
+              setDistrictSearchTerm('');
+              setShowDistrictDropdown(false);
+            });
+          }}
+
+
             disabled={!divisionName || disabled}
             required={required}
           />
@@ -222,6 +272,19 @@ const ModernLocationSelector = ({
                 }, 150);
               }
             }}
+
+            onKeyDown={(e) => {
+              const filtered = policeStations.filter(item =>
+                item.name?.toLowerCase().includes(policeSearchTerm.toLowerCase())
+              );
+              handleKeyDown(e, filtered, (name) => {
+                policeSelectionMade.current = true;
+                setPoliceStationName(name);
+                setPoliceSearchTerm('');
+                setShowPoliceDropdown(false);
+              });
+            }}
+
             disabled={!districtName || disabled}
             required={required}
           />

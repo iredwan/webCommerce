@@ -13,7 +13,7 @@ const fileStorageEngine = multer.diskStorage({
     cb(null, uploadsDir);
   },
   filename: (req, file, cb) => {
-    cb(null, "api-img" + Date.now() + "-" + "blood-cell-bd.png");
+    cb(null, "api-img" + Date.now() + ".png");
   },
 });
 

@@ -1,93 +1,200 @@
+import mongoose from 'mongoose';
+
+const imagesSchema = new mongoose.Schema({
+  image: { type: String, required: true },
+  isDisplayed: { type: Boolean, default: false },
+  order: { type: Number, default: 0 },
+  uploadedAt: { type: Date, default: Date.now }
+});
+
+// Variant Schema
+const variantSchema = new mongoose.Schema(
+  {
+    sku: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true,
+      trim: true,
+    },
+    color: { type: String },
+    size: { type: String },
+    price: { type: Number, required: true },
+    stock: { type: Number, required: true, min: 0 },
+    // Per-variant discount fields
+    discount: {
+      type: Number,
+      default: null,
+      validate: {
+        validator: function (value) {
+          if (this.discountType === 'percent') {
+            return value >= 0 && value <= 100;
+          }
+          // For 'flat' or null, allow any non-negative value
+          return value >= 0;
+        },
+        message: function (props) {
+          if (this.discountType === 'percent') {
+            return 'Percent discount must be between 0 and 100';
+          }
+          return 'Discount must be non-negative';
+        }
+      }
+    },
+    discountType: {
+      type: String,
+      enum: ['percent', 'flat'],
+      default: null,
+    },
+    discountSchedule: {
+      startDate: Date,
+      endDate: Date,
+      isActive: { type: Boolean, default: false }
+    },
+    images: [imagesSchema]
+  },
+  { _id: false, toJSON: { virtuals: true }, toObject: { virtuals: true } }
+);
+
+// 🔄 Virtual field: discountedPrice for variant
+variantSchema.virtual('discountedPrice').get(function () {
+  // If variant has its own discount, use it
+  if (this.discount != null && this.discountType) {
+    if (this.discountType === 'flat') {
+      return Math.max(0, this.price - this.discount);
+    }
+    // percent
+    return Math.max(0, this.price - (this.price * this.discount) / 100);
+  }
+  // If no variant discount, fallback to price
+  return this.price;
+});
+
+// Main Product Schema
 const productSchema = new mongoose.Schema(
   {
     name: {
       type: String,
       required: true,
       trim: true,
-      maxlength: 100
+      minlength: 2,
+      maxlength: 200,
     },
-    slug: String,
+    slug: {
+      type: String,
+      unique: true,
+      lowercase: true,
+      index: true,
+    },
     description: {
       type: String,
-      required: true,
-      trim: true
+      maxlength: 5000,
     },
-    brand: String,
     category: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Category',
-      required: true
+      ref: 'category',
+      required: true,
     },
-    subcategories: [{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'SubCategory'
-    }],
-    tags: [String],
-    isFeatured: {
-      type: Boolean,
-      default: false
+    brand: {
+      type: String,
+      trim: true,
     },
-    images: {
-      type: [String],
-      default: ['default-product.jpg']
+    variants: [variantSchema],
+    images: [imagesSchema],
+    basePrice: {
+      type: Number,
+      required: true,
     },
-    shipping: {
-      type: Boolean,
-      default: true
-    },
-    weight: Number,
-    dimensions: {
-      length: Number,
-      width: Number,
-      height: Number
-    },
-    active: {
-      type: Boolean,
-      default: true
-    },
-    // ✅ Variants Array
-    variants: [
-      {
-        sku: { type: String },
-        color: String,
-        size: String,
-        price: {
-          type: Number,
-          required: true,
-          min: 0
-        },
-        discountPrice: {
-          type: Number,
-          default: 0
-        },
-        quantity: {
-          type: Number,
-          required: true,
-          min: 0
-        },
-        images: [String], // optional override
-        isDefault: {
-          type: Boolean,
-          default: false
-        }
-      }
-    ],
-    // Ratings & reviews summary
-    ratings: {
+    discount: {
       type: Number,
       default: 0,
       min: 0,
-      max: 5,
-      set: val => Math.round(val * 10) / 10
+      max: 100,
     },
-    numReviews: {
+    discountType: {
+      type: String,
+      enum: ['percent', 'flat'],
+      default: 'percent'
+    },
+    discountSchedule: {
+      startDate: Date,
+      endDate: Date,
+      isActive: { type: Boolean, default: false }
+    },
+    color: {
+      type: String,
+    },
+    size: {
+      type: String,
+    },
+    totalStock: {
       type: Number,
-      default: 0
-    }
+      default: 0,
+    },
+    isPublished: {
+      type: Boolean,
+      default: false,
+    },
+    isFeatured: {
+      type: Boolean,
+      default: false,
+    },
+    isPromotedOnBanner: {
+      type: Boolean,
+      default: false,
+    },
+    salesCount: {
+      type: Number,
+      default: 0,
+    },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
+    relatedProducts: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'product',
+      },
+    ],
+    tags: {
+      type: [String],
+      set: (tags) => tags.map(tag => tag.toLowerCase()),
+    },
+    metaTitle: String,
+    metaDescription: String,
   },
   {
     timestamps: true,
     toJSON: { virtuals: true },
-    toObject: { virtuals: true }
+    toObject: { virtuals: true },
   }
 );
+
+// 🔄 Virtual field: discountedPrice
+// Product-level virtual: discountedPrice (for basePrice)
+productSchema.virtual('discountedPrice').get(function () {
+  if (this.discountType === 'flat') {
+    return Math.max(0, this.basePrice - this.discount);
+  }
+  // percent
+  return Math.max(0, this.basePrice - (this.basePrice * this.discount) / 100);
+});
+
+// 🔄 Pre-save hook: Stock only
+productSchema.pre('save', function (next) {
+  this.totalStock = this.variants.reduce((sum, v) => sum + v.stock, 0);
+  next();
+});
+
+// 🔄 Soft delete middleware
+productSchema.pre(/^find/, function (next) {
+  if (!this.getQuery().isDeleted) {
+    this.where({ isDeleted: false });
+  }
+  next();
+});
+
+const Product = mongoose.model('product', productSchema);
+
+export default Product;

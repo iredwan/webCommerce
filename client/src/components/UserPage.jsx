@@ -13,7 +13,7 @@ import { toast } from 'react-toastify';
 const UsersPage = () => {
   const router = useRouter();
   const [currentPage, setCurrentPage] = useState(1);
-  const [limit, setLimit] = useState(5);
+  const [limit, setLimit] = useState(10);
   const [formData, setFormData] = useState({
     isBlocked: '',
     isVerified: '',
@@ -44,29 +44,39 @@ const UsersPage = () => {
 
     const handleBlockUser = async (userId, isBlocked) => {
       try {
-        const response = await updateUser({ id: userId, isBlocked: !isBlocked }).unwrap();
+        const response = await updateUser({ 
+          id: userId, 
+          data: { isBlocked: !isBlocked }
+        }).unwrap();
+        
         if (response.status === true) {
-          toast.success(response.message || (isBlocked ? 'User unblocked' : 'User blocked'));
+          toast.success(response.message || (isBlocked ? 'User unblocked successfully' : 'User blocked successfully'));
           refetch();
         } else {
           toast.error(response.message || 'Failed to update block status');
         }
       } catch (error) {
-        toast.error('Failed to update block status');
+        console.error('Block user error:', error);
+        toast.error(error.data?.message || 'Failed to update block status');
       }
     };
 
     const handleVerifyUser = async (userId, isVerified) => {
       try {
-        const response = await updateUser({ id: userId, isVerified: !isVerified }).unwrap();
+        const response = await updateUser({ 
+          id: userId, 
+          data: { isVerified: !isVerified }
+        }).unwrap();
+        
         if (response.status === true) {
-          toast.success(response.message || (isVerified ? 'User unverified' : 'User verified'));
+          toast.success(response.message || (isVerified ? 'User unverified successfully' : 'User verified successfully'));
           refetch();
         } else {
           toast.error(response.message || 'Failed to update verify status');
         }
       } catch (error) {
-        toast.error('Failed to update verify status');
+        console.error('Verify user error:', error);
+        toast.error(error.data?.message || 'Failed to update verify status');
       }
     };
 

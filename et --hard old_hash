@@ -1,0 +1,42 @@
+[33m9c2410d[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m)[m HEAD@{0}: reset: moving to HEAD~15
+[33ma0d7722[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{1}: commit: Rename postcss config file to .js extension
+[33m3ce831a[m HEAD@{2}: commit: Update Tailwind, PostCSS, and Autoprefixer dependencies
+[33m4ef8ca1[m HEAD@{3}: commit: Switch config exports to CommonJS in client configs
+[33m36f1489[m HEAD@{4}: pull --ff --recurse-submodules --progress origin: Fast-forward
+[33m00c5d6c[m HEAD@{5}: pull --ff --recurse-submodules --progress origin: Merge made by the 'ort' strategy.
+[33m978070f[m HEAD@{6}: commit: Update React and React DOM to v19.1.0
+[33m1b17deb[m HEAD@{7}: commit: Add admin and user dashboard pages, CRUD user management
+[33m9dc5add[m HEAD@{8}: commit: Create add user
+[33m11af389[m HEAD@{9}: commit: Update layout.js
+[33m18ab728[m HEAD@{10}: commit: Update package-lock.json
+[33m97f5260[m HEAD@{11}: commit: Create CustomTopLoader.jsx
+[33m0ec5fcd[m HEAD@{12}: commit: Create BottomNavbar mobile
+[33m9c2410d[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m)[m HEAD@{13}: commit: Update Navbar.jsx
+[33mc5d24ce[m HEAD@{14}: commit: Add Login Features
+[33mea40353[m HEAD@{15}: reset: moving to ea40353c9b537b6ab7dcef09800435f9b6bbda4b
+[33mbe6d2e2[m HEAD@{16}: commit: Add Login Features
+[33mea40353[m HEAD@{17}: reset: moving to ea40353c9b537b6ab7dcef09800435f9b6bbda4b
+[33m28c7f98[m HEAD@{18}: commit: Add Login Features
+[33mea40353[m HEAD@{19}: commit: Create not-found.jsx
+[33ma916367[m HEAD@{20}: commit: Register Form UX UI Improve
+[33m73996b9[m HEAD@{21}: commit: Add User Register Form
+[33mc5efc8f[m HEAD@{22}: commit: Create React Redux for location API call
+[33m24cbd19[m HEAD@{23}: commit: Add Reusable component
+[33m9248f22[m HEAD@{24}: commit: Create Division, District, PS Backend Function
+[33me54bb44[m HEAD@{25}: commit: Create React Redux for User & UserOTP
+[33mb6a45d1[m HEAD@{26}: reset: moving to b6a45d1008a4da93c425a094ac00602b60362132
+[33m70e6152[m HEAD@{27}: commit: Create React Redux for User & UserOTP
+[33mb6a45d1[m HEAD@{28}: commit: Delete api.js
+[33mbf25055[m HEAD@{29}: commit: Update App Theme
+[33mcdd6cc7[m HEAD@{30}: commit: Update AuthMiddleware.js
+[33m718f884[m HEAD@{31}: commit: Update UserOTP Functions
+[33mc7bb948[m HEAD@{32}: commit: Add OTP Rate Limiter
+[33m1835fc2[m HEAD@{33}: commit: Add User Function In Backend
+[33m0c389e7[m HEAD@{34}: commit: Delete some unnecessary file
+[33m1f46782[m HEAD@{35}: commit: Add client folder
+[33mf174133[m HEAD@{36}: reset: moving to f17413391c7eca280c5613c750e8087f05061a26
+[33m13a9a57[m HEAD@{37}: commit: Add client folder
+[33mf174133[m HEAD@{38}: commit: Cache Update to ON
+[33mc57c28c[m HEAD@{39}: commit: Add WebColor features
+[33m52bce01[m HEAD@{40}: commit: OTP function
+[33mf11d672[m HEAD@{41}: commit (initial): Initial commit

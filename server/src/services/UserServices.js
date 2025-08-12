@@ -2,6 +2,7 @@ import UserModel from "../model/UserModel.js";
 import { TokenEncode } from "../utility/tokenUtility.js";
 import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
+import { deleteFile } from './../utility/fileUtils.js';
 const ObjectId = mongoose.Types.ObjectId;
 
 export const userRegisterService = async (req) => {
@@ -27,9 +28,21 @@ export const userRegisterService = async (req) => {
 
 export const userRegisterWithRefService = async (req) => {
   try {
-    const ref_userId = req.user.id
-    
+    const ref_userId = new ObjectId(req.user.id)
     let reqBody = req.body;
+
+    reqBody.cus_email = reqBody.cus_email.trim();
+    reqBody.cus_phone = reqBody.cus_phone.trim();
+    const existingUser = await UserModel.findOne({cus_email: reqBody.cus_email 
+    });
+    if (existingUser) {
+      return { status: false, message: "User already exists with this email." };
+    }
+    const existingUserPhone = await UserModel.findOne({cus_phone: reqBody.cus_phone});
+    if (existingUserPhone) {
+      return { status: false, message: "User already exists with this phone number." };
+    }
+    
     reqBody.ref_userId = ref_userId;
     reqBody.isVerified = true;
     let data = await UserModel.create(reqBody);
@@ -151,12 +164,20 @@ export const getAllUsersService = async (req) => {
 export const updateUserService = async (req) => {
   try {
     const user_Id = new ObjectId(req.params.id); 
-    const reqBody = req.body;
-
+    const reqBody = req.body
     const editBy = new ObjectId(req.user.id);
     reqBody.editBy = editBy;
 
-    await UserModel.findOneAndUpdate(
+    // Delete old image if old img !== reqBody.img
+    if (reqBody.img) {
+      const oldImage = await UserModel.findById(user_Id).select("img");
+
+      if (oldImage && oldImage.img !== reqBody.img) {
+        await deleteFile(oldImage.img);
+      }
+    }
+
+    await UserModel.findByIdAndUpdate(
       { _id: user_Id }, 
       { $set: reqBody },
       { upsert: true } 
@@ -172,6 +193,13 @@ export const deleteUserService = async (req) => {
   try {
     const deleteId = req.params.id;
     const userRole = req.user.id;
+
+    // Delete img
+    const oldImage = await UserModel.findById(deleteId).select("img");
+
+    if (oldImage) {
+      await deleteFile(oldImage.img);
+    }
 
     const user = await UserModel.findById(deleteId);
     if (!user) {

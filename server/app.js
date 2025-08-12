@@ -8,13 +8,16 @@ import dotenv from "dotenv";
 
 
 //Router
-import UserOTP from "./src/routes/UserOTPApi.js"
-import WebColor from "./src/routes/WebColorApi.js"
+import UserOTPApi from "./src/routes/UserOTPApi.js"
+import WebColorApi from "./src/routes/WebColorApi.js"
 import UserApi from "./src/routes/UserApi.js"
 import DivisionApi from "./src/routes/DivisionDistrictPS/DivisionApi.js"
 import DistrictApi from "./src/routes/DivisionDistrictPS/DistrictApi.js"
 import PSApi from "./src/routes/DivisionDistrictPS/PSApi.js"
-import UserInfo from "./src/routes/UserInfoRoute.js"
+import UserInfoApi from "./src/routes/UserInfoApi.js"
+import uploadFileApi from "./src/routes/UploadFileApi.js";
+import ProductApi from "./src/routes/ProductApi.js";
+import CategoryApi from "./src/routes/CategoryApi.js";
 
 dotenv.config();
 const app = express();
@@ -59,14 +62,16 @@ mongoose.connect(process.env.DATABASE,{autoIndex:true}).then(()=>{
 
 
 //Router
-app.use("/api/user",UserOTP)
-app.use("/api/web-color",WebColor)
+app.use('/api', uploadFileApi);
+app.use("/api/user",UserOTPApi)
+app.use("/api/web-color",WebColorApi)
 app.use("/api/user", UserApi)
 app.use("/api/division", DivisionApi)
 app.use("/api/district", DistrictApi)
 app.use("/api/ps", PSApi)
-app.use("/api/user-info", UserInfo)
-
+app.use("/api/user-info", UserInfoApi)
+app.use("/api/product", ProductApi);
+app.use("/api/category", CategoryApi);
 
 app.use("/upload-file", express.static("uploads"));
 

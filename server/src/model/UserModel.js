@@ -9,8 +9,9 @@ const DataSchema = new mongoose.Schema(
     isBlocked: { type: Boolean, default: false},
     cus_firstName: { type: String, required: true},
     cus_lastName: { type: String },
-    img: { type: String, default: "default-profile.png" },
+    img: { type: String },
     cus_dob: { type: String, required: true},
+    gender: { type: String, required: true, enum: ["Male", "Female", "Other"]},
     cus_phone: { type: String,required: true, unique: true },
     cus_email: { type: String,required: true, unique: true },
     password: { 
