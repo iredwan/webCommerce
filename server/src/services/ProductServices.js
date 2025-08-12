@@ -15,7 +15,7 @@ import {
 } from "../utility/auditLogger.js";
 import mongoose from "mongoose";
 import AuditLog from "../model/AuditLog.js";
-const ObjectId = mongoose.Types.ObjectId;
+const ObjectId = mongoose.Types.ObjectId; 
 
 export const createProductService = async (req) => {
   try {
@@ -436,35 +436,48 @@ export const deleteProductService = async (productId, req) => {
 };
 
 export const toggleProductPublishService = async (productId, req) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     if (!ObjectId.isValid(productId)) {
+      await session.abortTransaction();
+      session.endSession();
       return { status: false, message: "Invalid product ID." };
     }
 
-    const product = await ProductModel.findById(productId);
-    if (!product) {
+    const updatedProduct = await ProductModel.findOneAndUpdate(
+      { _id: productId },
+      [
+        { $set: { isPublished: { $not: "$isPublished" } } }
+      ],
+      { new: true, session }
+    );
+
+    if (!updatedProduct) {
+      await session.abortTransaction();
+      session.endSession();
       return { status: false, message: "Product not found." };
     }
 
-    const updatedProduct = await ProductModel.findByIdAndUpdate(
-      productId,
-      { isPublished: !product.isPublished },
-      { new: true }
-    );
+    await logPublishStatusChange(req, updatedProduct, updatedProduct.isPublished, session);
 
-    // Create audit log
-    await logPublishStatusChange(req, product, !product.isPublished);
+    await session.commitTransaction();
+    session.endSession();
 
     return {
       status: true,
       data: updatedProduct,
       message: `Product ${updatedProduct.isPublished ? 'published' : 'unpublished'} successfully.`
     };
-  } catch (e) {
-    console.error("Product publish toggle error:", e);
+
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    console.error("Product publish toggle transaction error:", error);
     return {
       status: false,
-      error: e.message || e.toString(),
+      error: error.message || String(error),
       message: "Failed to toggle product publish status."
     };
   }
@@ -498,7 +511,7 @@ export const searchProductsService = async (searchQuery, options = {}) => {
     return {
       status: true,
       data: products,
-      meta: {
+      pagination: {
         total,
         currentPage: page,
         totalPages: Math.ceil(total / limit),
@@ -543,7 +556,7 @@ export const getProductsByCategoryService = async (categoryId, options = {}) => 
     return {
       status: true,
       data: products,
-      meta: {
+      pagination: {
         total,
         currentPage: page,
         totalPages: Math.ceil(total / limit),
@@ -1139,7 +1152,7 @@ export const getProductsOnSaleService = async (options = {}) => {
     return {
       status: true,
       data: products,
-      meta: {
+      pagination: {
         total,
         currentPage: page,
         totalPages: Math.ceil(total / limit),
@@ -1256,77 +1269,6 @@ export const addTagsService = async (productId, tags, req) => {
 // ============================================
 // 5. PRODUCT STATUS / VISIBILITY FUNCTIONS
 // ============================================
-
-export const publishProductService = async (productId, req) => {
-  try {
-    if (!ObjectId.isValid(productId)) {
-      return { status: false, message: "Invalid product ID." };
-    }
-
-    const product = await ProductModel.findById(productId);
-    if (!product) {
-      return { status: false, message: "Product not found." };
-    }
-
-    const updatedProduct = await ProductModel.findByIdAndUpdate(
-      productId,
-      { isPublished: true },
-      { new: true }
-    );
-
-    // Create audit log
-    await logPublishStatusChange(req, product, true);
-
-    return {
-      status: true,
-      data: updatedProduct,
-      message: "Product published successfully."
-    };
-  } catch (e) {
-    console.error("Publish product error:", e);
-    return {
-      status: false,
-      error: e.message || e.toString(),
-      message: "Failed to publish product."
-    };
-  }
-};
-
-export const unpublishProductService = async (productId, req) => {
-  try {
-    if (!ObjectId.isValid(productId)) {
-      return { status: false, message: "Invalid product ID." };
-    }
-
-    const product = await ProductModel.findById(productId);
-    if (!product) {
-      return { status: false, message: "Product not found." };
-    }
-
-    const updatedProduct = await ProductModel.findByIdAndUpdate(
-      productId,
-      { isPublished: false },
-      { new: true }
-    );
-
-    // Create audit log
-    await logPublishStatusChange(req, product, false);
-
-    return {
-      status: true,
-      data: updatedProduct,
-      message: "Product unpublished successfully."
-    };
-  } catch (e) {
-    console.error("Unpublish product error:", e);
-    return {
-      status: false,
-      error: e.message || e.toString(),
-      message: "Failed to unpublish product."
-    };
-  }
-};
-
 export const featureProductService = async (productId, req) => {
   try {
     if (!ObjectId.isValid(productId)) {
@@ -1563,7 +1505,7 @@ export const updateSlugService = async (productId, req) => {
   }
 };
 
-export const addMetaDataService = async (productId, metaTitle, metaDescription, req) => {
+export const addpaginationDataService = async (productId, paginationTitle, paginationDescription, req) => {
   try {
     if (!ObjectId.isValid(productId)) {
       return { status: false, message: "Invalid product ID." };
@@ -1574,14 +1516,14 @@ export const addMetaDataService = async (productId, metaTitle, metaDescription, 
       return { status: false, message: "Product not found." };
     }
 
-    const oldMeta = {
-      metaTitle: product.metaTitle,
-      metaDescription: product.metaDescription
+    const oldpagination = {
+      paginationTitle: product.paginationTitle,
+      paginationDescription: product.paginationDescription
     };
 
     const updateData = {};
-    if (metaTitle !== undefined) updateData.metaTitle = metaTitle;
-    if (metaDescription !== undefined) updateData.metaDescription = metaDescription;
+    if (paginationTitle !== undefined) updateData.paginationTitle = paginationTitle;
+    if (paginationDescription !== undefined) updateData.paginationDescription = paginationDescription;
 
     const updatedProduct = await ProductModel.findByIdAndUpdate(
       productId,
@@ -1590,19 +1532,19 @@ export const addMetaDataService = async (productId, metaTitle, metaDescription, 
     );
 
     // Create audit log
-    await logProductUpdate(req, productId, oldMeta, updateData);
+    await logProductUpdate(req, productId, oldpagination, updateData);
 
     return {
       status: true,
       data: updatedProduct,
-      message: "Product meta data updated successfully."
+      message: "Product pagination data updated successfully."
     };
   } catch (e) {
-    console.error("Add meta data error:", e);
+    console.error("Add pagination data error:", e);
     return {
       status: false,
       error: e.message || e.toString(),
-      message: "Failed to update product meta data."
+      message: "Failed to update product pagination data."
     };
   }
 };

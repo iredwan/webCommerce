@@ -70,7 +70,7 @@ app.use("/api/division", DivisionApi)
 app.use("/api/district", DistrictApi)
 app.use("/api/ps", PSApi)
 app.use("/api/user-info", UserInfoApi)
-app.use("/api/product", ProductApi);
+app.use("/api/products", ProductApi);
 app.use("/api/category", CategoryApi);
 
 app.use("/upload-file", express.static("uploads"));

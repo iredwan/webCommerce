@@ -31,8 +31,6 @@ import {
   assignCategoryController,
   addTagsController,
   // Product Status / Visibility
-  publishProductController,
-  unpublishProductController,
   featureProductController,
   // Product Analytics & Reports
   getTopSellingProductsController,
@@ -42,7 +40,6 @@ import {
   incrementProductViewController,
   // Promotional & SEO Tools
   updateSlugController,
-  addMetaDataController,
   promoteProductOnBannerController
 } from "../controllers/ProductController.js";
 import { protect, restrictTo } from "../middlewares/AuthMiddleware.js";
@@ -93,21 +90,19 @@ router.patch("/:id/category", protect, restrictTo("admin", "manager"), assignCat
 router.patch("/:id/tags", protect, restrictTo("admin", "manager"), addTagsController);
 
 // Product Status / Visibility
-router.patch("/:id/publish", protect, restrictTo("admin", "manager"), publishProductController);
-router.patch("/:id/unpublish", protect, restrictTo("admin", "manager"), unpublishProductController);
+router.patch("/toggle/:id", protect, restrictTo("admin", "manager"), toggleProductPublishController);
 router.patch("/:id/feature", protect, restrictTo("admin", "manager"), featureProductController);
 router.patch("/:id/promote-banner", protect, restrictTo("admin", "manager"), promoteProductOnBannerController);
 
 // SEO Tools
 router.patch("/:id/slug", protect, restrictTo("admin", "manager"), updateSlugController);
-router.patch("/:id/meta", protect, restrictTo("admin", "manager"), addMetaDataController);
 
 // Bulk operations
 router.put("/bulk", protect, restrictTo("admin", "manager"), bulkUpdateProductsController);
 router.delete("/bulk", protect, restrictTo("admin", "manager"), bulkDeleteProductsController);
 
 // Individual operations
-router.put("/:id", protect, restrictTo("admin", "manager"), updateProductController);
+router.put("/update/:id", protect, restrictTo("admin", "manager"), updateProductController);
 router.delete("/:id", protect, restrictTo("admin", "manager"), deleteProductController);
 
 export default router;

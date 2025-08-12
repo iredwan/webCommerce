@@ -30,8 +30,6 @@ import {
   assignCategoryService,
   addTagsService,
   // Product Status / Visibility
-  publishProductService,
-  unpublishProductService,
   featureProductService,
   // Product Analytics & Reports
   getTopSellingProductsService,
@@ -41,7 +39,6 @@ import {
   incrementProductViewService,
   // Promotional & SEO Tools
   updateSlugService,
-  addMetaDataService,
   promoteProductOnBannerService
 } from "../services/ProductServices.js";
 
@@ -121,20 +118,7 @@ export const getProductBySlugController = async (req, res) => {
   try {
     const { slug } = req.params;
     const response = await getProductBySlugService(slug);
-    
-    if (response.status) {
-      return res.status(200).json({
-        status: "success",
-        message: response.message,
-        data: response.data
-      });
-    } else {
-      return res.status(404).json({
-        status: "error",
-        message: response.message,
-        error: response.error
-      });
-    }
+    return res.status(response.status ? 200 : 400).json(response);
   } catch (error) {
     console.error("Get product by slug controller error:", error);
     return res.status(500).json({
@@ -149,21 +133,7 @@ export const updateProductController = async (req, res) => {
   try {
     const { id } = req.params;
     const response = await updateProductService(id, req);
-    
-    if (response.status) {
-      return res.status(200).json({
-        status: "success",
-        message: response.message,
-        data: response.data
-      });
-    } else {
-      return res.status(400).json({
-        status: "error",
-        message: response.message,
-        error: response.error,
-        errors: response.errors // Include validation errors if present
-      });
-    }
+    return res.status(response.status ? 200 : 400).json(response);
   } catch (error) {
     console.error("Update product controller error:", error);
     return res.status(500).json({
@@ -178,19 +148,7 @@ export const deleteProductController = async (req, res) => {
   try {
     const { id } = req.params;
     const response = await deleteProductService(id, req);
-    
-    if (response.status) {
-      return res.status(200).json({
-        status: "success",
-        message: response.message
-      });
-    } else {
-      return res.status(400).json({
-        status: "error",
-        message: response.message,
-        error: response.error
-      });
-    }
+    return res.status(response.status ? 200 : 400).json(response);
   } catch (error) {
     console.error("Delete product controller error:", error);
     return res.status(500).json({
@@ -205,20 +163,7 @@ export const toggleProductPublishController = async (req, res) => {
   try {
     const { id } = req.params;
     const response = await toggleProductPublishService(id, req);
-    
-    if (response.status) {
-      return res.status(200).json({
-        status: "success",
-        message: response.message,
-        data: response.data
-      });
-    } else {
-      return res.status(400).json({
-        status: "error",
-        message: response.message,
-        error: response.error
-      });
-    }
+    return res.status(response.status ? 200 : 400).json(response);
   } catch (error) {
     console.error("Toggle product publish controller error:", error);
     return res.status(500).json({
@@ -233,30 +178,14 @@ export const updateProductStockController = async (req, res) => {
   try {
     const { id } = req.params;
     const { variantSku, stockChange } = req.body;
-    
     if (!variantSku || stockChange === undefined) {
       return res.status(400).json({
         status: "error",
         message: "Variant SKU and stock change are required."
       });
     }
-    
     const response = await updateProductStockService(id, variantSku, parseInt(stockChange), req);
-    
-    if (response.status) {
-      return res.status(200).json({
-        status: "success",
-        message: response.message,
-        data: response.data
-      });
-    } else {
-      return res.status(400).json({
-        status: "error",
-        message: response.message,
-        error: response.error,
-        errors: response.errors // Include validation errors if present
-      });
-    }
+    return res.status(response.status ? 200 : 400).json(response);
   } catch (error) {
     console.error("Update product stock controller error:", error);
     return res.status(500).json({
@@ -270,30 +199,14 @@ export const updateProductStockController = async (req, res) => {
 export const searchProductsController = async (req, res) => {
   try {
     const { q: searchQuery } = req.query;
-    
     if (!searchQuery) {
       return res.status(400).json({
         status: "error",
         message: "Search query is required."
       });
     }
-    
     const response = await searchProductsService(searchQuery, req.query);
-    
-    if (response.status) {
-      return res.status(200).json({
-        status: "success",
-        message: response.message,
-        data: response.data,
-        meta: response.meta
-      });
-    } else {
-      return res.status(400).json({
-        status: "error",
-        message: response.message,
-        error: response.error
-      });
-    }
+    return res.status(response.status ? 200 : 400).json(response);
   } catch (error) {
     console.error("Search products controller error:", error);
     return res.status(500).json({
@@ -308,21 +221,7 @@ export const getProductsByCategoryController = async (req, res) => {
   try {
     const { categoryId } = req.params;
     const response = await getProductsByCategoryService(categoryId, req.query);
-    
-    if (response.status) {
-      return res.status(200).json({
-        status: "success",
-        message: response.message,
-        data: response.data,
-        meta: response.meta
-      });
-    } else {
-      return res.status(400).json({
-        status: "error",
-        message: response.message,
-        error: response.error
-      });
-    }
+    return res.status(response.status ? 200 : 400).json(response);
   } catch (error) {
     console.error("Get products by category controller error:", error);
     return res.status(500).json({
@@ -337,20 +236,7 @@ export const getFeaturedProductsController = async (req, res) => {
   try {
     const { limit } = req.query;
     const response = await getFeaturedProductsService(limit);
-    
-    if (response.status) {
-      return res.status(200).json({
-        status: "success",
-        message: response.message,
-        data: response.data
-      });
-    } else {
-      return res.status(400).json({
-        status: "error",
-        message: response.message,
-        error: response.error
-      });
-    }
+    return res.status(response.status ? 200 : 400).json(response);
   } catch (error) {
     console.error("Get featured products controller error:", error);
     return res.status(500).json({
@@ -366,20 +252,7 @@ export const getRelatedProductsController = async (req, res) => {
     const { id } = req.params;
     const { limit } = req.query;
     const response = await getRelatedProductsService(id, limit);
-    
-    if (response.status) {
-      return res.status(200).json({
-        status: "success",
-        message: response.message,
-        data: response.data
-      });
-    } else {
-      return res.status(400).json({
-        status: "error",
-        message: response.message,
-        error: response.error
-      });
-    }
+    return res.status(response.status ? 200 : 400).json(response);
   } catch (error) {
     console.error("Get related products controller error:", error);
     return res.status(500).json({
@@ -393,20 +266,7 @@ export const getRelatedProductsController = async (req, res) => {
 export const getProductStatsController = async (req, res) => {
   try {
     const response = await getProductStatsService();
-    
-    if (response.status) {
-      return res.status(200).json({
-        status: "success",
-        message: response.message,
-        data: response.data
-      });
-    } else {
-      return res.status(400).json({
-        status: "error",
-        message: response.message,
-        error: response.error
-      });
-    }
+    return res.status(response.status ? 200 : 400).json(response);
   } catch (error) {
     console.error("Get product stats controller error:", error);
     return res.status(500).json({
@@ -420,30 +280,14 @@ export const getProductStatsController = async (req, res) => {
 export const bulkUpdateProductsController = async (req, res) => {
   try {
     const { productIds, updateData } = req.body;
-    
     if (!productIds || !updateData) {
       return res.status(400).json({
         status: "error",
         message: "Product IDs and update data are required."
       });
     }
-    
     const response = await bulkUpdateProductsService(productIds, updateData);
-    
-    if (response.status) {
-      return res.status(200).json({
-        status: "success",
-        message: response.message,
-        data: response.data
-      });
-    } else {
-      return res.status(400).json({
-        status: "error",
-        message: response.message,
-        error: response.error,
-        errors: response.errors
-      });
-    }
+    return res.status(response.status ? 200 : 400).json(response);
   } catch (error) {
     console.error("Bulk update products controller error:", error);
     return res.status(500).json({
@@ -457,29 +301,14 @@ export const bulkUpdateProductsController = async (req, res) => {
 export const bulkDeleteProductsController = async (req, res) => {
   try {
     const { productIds } = req.body;
-    
     if (!productIds) {
       return res.status(400).json({
         status: "error",
         message: "Product IDs are required."
       });
     }
-    
     const response = await bulkDeleteProductsService(productIds);
-    
-    if (response.status) {
-      return res.status(200).json({
-        status: "success",
-        message: response.message,
-        data: response.data
-      });
-    } else {
-      return res.status(400).json({
-        status: "error",
-        message: response.message,
-        error: response.error
-      });
-    }
+    return res.status(response.status ? 200 : 400).json(response);
   } catch (error) {
     console.error("Bulk delete products controller error:", error);
     return res.status(500).json({
@@ -494,20 +323,7 @@ export const duplicateProductController = async (req, res) => {
   try {
     const { id } = req.params;
     const response = await duplicateProductService(id);
-    
-    if (response.status) {
-      return res.status(201).json({
-        status: "success",
-        message: response.message,
-        data: response.data
-      });
-    } else {
-      return res.status(400).json({
-        status: "error",
-        message: response.message,
-        error: response.error
-      });
-    }
+    return res.status(response.status ? 201 : 400).json(response);
   } catch (error) {
     console.error("Duplicate product controller error:", error);
     return res.status(500).json({
@@ -527,20 +343,7 @@ export const addVariantController = async (req, res) => {
     const { id } = req.params;
     const variant = req.body;
     const response = await addVariantService(id, variant, req);
-    
-    if (response.status) {
-      return res.status(201).json({
-        status: "success",
-        message: response.message,
-        data: response.data
-      });
-    } else {
-      return res.status(400).json({
-        status: "error",
-        message: response.message,
-        error: response.error
-      });
-    }
+    return res.status(response.status ? 201 : 400).json(response);
   } catch (error) {
     console.error("Add variant controller error:", error);
     return res.status(500).json({
@@ -555,20 +358,7 @@ export const getLowStockController = async (req, res) => {
   try {
     const { threshold } = req.query;
     const response = await getLowStockService(threshold);
-    
-    if (response.status) {
-      return res.status(200).json({
-        status: "success",
-        message: response.message,
-        data: response.data
-      });
-    } else {
-      return res.status(400).json({
-        status: "error",
-        message: response.message,
-        error: response.error
-      });
-    }
+    return res.status(response.status ? 200 : 400).json(response);
   } catch (error) {
     console.error("Get low stock controller error:", error);
     return res.status(500).json({
@@ -584,20 +374,7 @@ export const restockProductController = async (req, res) => {
     const { id } = req.params;
     const restockData = req.body;
     const response = await restockProductService(id, restockData, req);
-    
-    if (response.status) {
-      return res.status(200).json({
-        status: "success",
-        message: response.message,
-        data: response.data
-      });
-    } else {
-      return res.status(400).json({
-        status: "error",
-        message: response.message,
-        error: response.error
-      });
-    }
+    return res.status(response.status ? 200 : 400).json(response);
   } catch (error) {
     console.error("Restock product controller error:", error);
     return res.status(500).json({
@@ -617,20 +394,7 @@ export const applyDiscountController = async (req, res) => {
     const { id } = req.params;
     const discountData = req.body;
     const response = await applyDiscountService(id, discountData, req);
-    
-    if (response.status) {
-      return res.status(200).json({
-        status: "success",
-        message: response.message,
-        data: response.data
-      });
-    } else {
-      return res.status(400).json({
-        status: "error",
-        message: response.message,
-        error: response.error
-      });
-    }
+    return res.status(response.status ? 200 : 400).json(response);
   } catch (error) {
     console.error("Apply discount controller error:", error);
     return res.status(500).json({
@@ -645,20 +409,7 @@ export const removeDiscountController = async (req, res) => {
   try {
     const { id } = req.params;
     const response = await removeDiscountService(id, req);
-    
-    if (response.status) {
-      return res.status(200).json({
-        status: "success",
-        message: response.message,
-        data: response.data
-      });
-    } else {
-      return res.status(400).json({
-        status: "error",
-        message: response.message,
-        error: response.error
-      });
-    }
+    return res.status(response.status ? 200 : 400).json(response);
   } catch (error) {
     console.error("Remove discount controller error:", error);
     return res.status(500).json({
@@ -674,20 +425,7 @@ export const scheduleDiscountController = async (req, res) => {
     const { id } = req.params;
     const { startDate, endDate, discountData } = req.body;
     const response = await scheduleDiscountService(id, startDate, endDate, discountData, req);
-    
-    if (response.status) {
-      return res.status(200).json({
-        status: "success",
-        message: response.message,
-        data: response.data
-      });
-    } else {
-      return res.status(400).json({
-        status: "error",
-        message: response.message,
-        error: response.error
-      });
-    }
+    return res.status(response.status ? 200 : 400).json(response);
   } catch (error) {
     console.error("Schedule discount controller error:", error);
     return res.status(500).json({
@@ -701,21 +439,7 @@ export const scheduleDiscountController = async (req, res) => {
 export const getProductsOnSaleController = async (req, res) => {
   try {
     const response = await getProductsOnSaleService(req.query);
-    
-    if (response.status) {
-      return res.status(200).json({
-        status: "success",
-        message: response.message,
-        data: response.data,
-        meta: response.meta
-      });
-    } else {
-      return res.status(400).json({
-        status: "error",
-        message: response.message,
-        error: response.error
-      });
-    }
+    return res.status(response.status ? 200 : 400).json(response);
   } catch (error) {
     console.error("Get products on sale controller error:", error);
     return res.status(500).json({
@@ -735,20 +459,7 @@ export const assignCategoryController = async (req, res) => {
     const { id } = req.params;
     const { categoryIds } = req.body;
     const response = await assignCategoryService(id, categoryIds, req);
-    
-    if (response.status) {
-      return res.status(200).json({
-        status: "success",
-        message: response.message,
-        data: response.data
-      });
-    } else {
-      return res.status(400).json({
-        status: "error",
-        message: response.message,
-        error: response.error
-      });
-    }
+    return res.status(response.status ? 200 : 400).json(response);
   } catch (error) {
     console.error("Assign category controller error:", error);
     return res.status(500).json({
@@ -764,20 +475,7 @@ export const addTagsController = async (req, res) => {
     const { id } = req.params;
     const { tags } = req.body;
     const response = await addTagsService(id, tags, req);
-    
-    if (response.status) {
-      return res.status(200).json({
-        status: "success",
-        message: response.message,
-        data: response.data
-      });
-    } else {
-      return res.status(400).json({
-        status: "error",
-        message: response.message,
-        error: response.error
-      });
-    }
+    return res.status(response.status ? 200 : 400).json(response);
   } catch (error) {
     console.error("Add tags controller error:", error);
     return res.status(500).json({
@@ -792,80 +490,11 @@ export const addTagsController = async (req, res) => {
 // PRODUCT STATUS / VISIBILITY CONTROLLERS
 // ============================================
 
-export const publishProductController = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const response = await publishProductService(id, req);
-    
-    if (response.status) {
-      return res.status(200).json({
-        status: "success",
-        message: response.message,
-        data: response.data
-      });
-    } else {
-      return res.status(400).json({
-        status: "error",
-        message: response.message,
-        error: response.error
-      });
-    }
-  } catch (error) {
-    console.error("Publish product controller error:", error);
-    return res.status(500).json({
-      status: "error",
-      message: "Internal Server Error",
-      error: error.toString()
-    });
-  }
-};
-
-export const unpublishProductController = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const response = await unpublishProductService(id, req);
-    
-    if (response.status) {
-      return res.status(200).json({
-        status: "success",
-        message: response.message,
-        data: response.data
-      });
-    } else {
-      return res.status(400).json({
-        status: "error",
-        message: response.message,
-        error: response.error
-      });
-    }
-  } catch (error) {
-    console.error("Unpublish product controller error:", error);
-    return res.status(500).json({
-      status: "error",
-      message: "Internal Server Error",
-      error: error.toString()
-    });
-  }
-};
-
 export const featureProductController = async (req, res) => {
   try {
     const { id } = req.params;
     const response = await featureProductService(id, req);
-    
-    if (response.status) {
-      return res.status(200).json({
-        status: "success",
-        message: response.message,
-        data: response.data
-      });
-    } else {
-      return res.status(400).json({
-        status: "error",
-        message: response.message,
-        error: response.error
-      });
-    }
+    return res.status(response.status ? 200 : 400).json(response);
   } catch (error) {
     console.error("Feature product controller error:", error);
     return res.status(500).json({
@@ -884,20 +513,7 @@ export const getTopSellingProductsController = async (req, res) => {
   try {
     const { limit } = req.query;
     const response = await getTopSellingProductsService(limit);
-    
-    if (response.status) {
-      return res.status(200).json({
-        status: "success",
-        message: response.message,
-        data: response.data
-      });
-    } else {
-      return res.status(400).json({
-        status: "error",
-        message: response.message,
-        error: response.error
-      });
-    }
+    return res.status(response.status ? 200 : 400).json(response);
   } catch (error) {
     console.error("Get top selling products controller error:", error);
     return res.status(500).json({
@@ -912,20 +528,7 @@ export const getSlowMovingProductsController = async (req, res) => {
   try {
     const { limit } = req.query;
     const response = await getSlowMovingProductsService(limit);
-    
-    if (response.status) {
-      return res.status(200).json({
-        status: "success",
-        message: response.message,
-        data: response.data
-      });
-    } else {
-      return res.status(400).json({
-        status: "error",
-        message: response.message,
-        error: response.error
-      });
-    }
+    return res.status(response.status ? 200 : 400).json(response);
   } catch (error) {
     console.error("Get slow moving products controller error:", error);
     return res.status(500).json({
@@ -939,20 +542,7 @@ export const getSlowMovingProductsController = async (req, res) => {
 export const getStockValuationController = async (req, res) => {
   try {
     const response = await getStockValuationService();
-    
-    if (response.status) {
-      return res.status(200).json({
-        status: "success",
-        message: response.message,
-        data: response.data
-      });
-    } else {
-      return res.status(400).json({
-        status: "error",
-        message: response.message,
-        error: response.error
-      });
-    }
+    return res.status(response.status ? 200 : 400).json(response);
   } catch (error) {
     console.error("Get stock valuation controller error:", error);
     return res.status(500).json({
@@ -967,20 +557,7 @@ export const getProductViewsController = async (req, res) => {
   try {
     const { id } = req.params;
     const response = await getProductViewsService(id);
-    
-    if (response.status) {
-      return res.status(200).json({
-        status: "success",
-        message: response.message,
-        data: response.data
-      });
-    } else {
-      return res.status(400).json({
-        status: "error",
-        message: response.message,
-        error: response.error
-      });
-    }
+    return res.status(response.status ? 200 : 400).json(response);
   } catch (error) {
     console.error("Get product views controller error:", error);
     return res.status(500).json({
@@ -995,20 +572,7 @@ export const incrementProductViewController = async (req, res) => {
   try {
     const { id } = req.params;
     const response = await incrementProductViewService(id);
-    
-    if (response.status) {
-      return res.status(200).json({
-        status: "success",
-        message: response.message,
-        data: response.data
-      });
-    } else {
-      return res.status(400).json({
-        status: "error",
-        message: response.message,
-        error: response.error
-      });
-    }
+    return res.status(response.status ? 200 : 400).json(response);
   } catch (error) {
     console.error("Increment product view controller error:", error);
     return res.status(500).json({
@@ -1027,20 +591,7 @@ export const updateSlugController = async (req, res) => {
   try {
     const { id } = req.params;
     const response = await updateSlugService(id, req);
-    
-    if (response.status) {
-      return res.status(200).json({
-        status: "success",
-        message: response.message,
-        data: response.data
-      });
-    } else {
-      return res.status(400).json({
-        status: "error",
-        message: response.message,
-        error: response.error
-      });
-    }
+    return res.status(response.status ? 200 : 400).json(response);
   } catch (error) {
     console.error("Update slug controller error:", error);
     return res.status(500).json({
@@ -1051,53 +602,12 @@ export const updateSlugController = async (req, res) => {
   }
 };
 
-export const addMetaDataController = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { metaTitle, metaDescription } = req.body;
-    const response = await addMetaDataService(id, metaTitle, metaDescription, req);
-    
-    if (response.status) {
-      return res.status(200).json({
-        status: "success",
-        message: response.message,
-        data: response.data
-      });
-    } else {
-      return res.status(400).json({
-        status: "error",
-        message: response.message,
-        error: response.error
-      });
-    }
-  } catch (error) {
-    console.error("Add meta data controller error:", error);
-    return res.status(500).json({
-      status: "error",
-      message: "Internal Server Error",
-      error: error.toString()
-    });
-  }
-};
 
 export const promoteProductOnBannerController = async (req, res) => {
   try {
     const { id } = req.params;
     const response = await promoteProductOnBannerService(id, req);
-    
-    if (response.status) {
-      return res.status(200).json({
-        status: "success",
-        message: response.message,
-        data: response.data
-      });
-    } else {
-      return res.status(400).json({
-        status: "error",
-        message: response.message,
-        error: response.error
-      });
-    }
+    return res.status(response.status ? 200 : 400).json(response);
   } catch (error) {
     console.error("Promote product on banner controller error:", error);
     return res.status(500).json({
