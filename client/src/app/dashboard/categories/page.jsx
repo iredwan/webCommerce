@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   useGetAllCategoriesQuery,
+  useGetCategoryByNameQuery, // <-- Import the new hook
   useCreateCategoryMutation,
   useUpdateCategoryMutation,
   useDeleteCategoryMutation,
@@ -80,12 +81,12 @@ export default function CategoriesPage() {
     isLoading,
     error,
     refetch
-  } = useGetAllCategoriesQuery({
-    page: currentPage,
-    limit,
-    search: searchTerm,
-    ...(filterParent && { parentCategory: filterParent })
-  });
+  } = searchTerm.trim()
+    ? useGetCategoryByNameQuery(searchTerm.trim())
+    : useGetAllCategoriesQuery({
+        page: currentPage,
+        limit,
+      });
 
   const [createCategory, { isLoading: isCreating }] = useCreateCategoryMutation();
   const [updateCategory, { isLoading: isUpdating }] = useUpdateCategoryMutation();
@@ -93,7 +94,7 @@ export default function CategoriesPage() {
   const [deleteCategoryImage] = useDeleteCategoryImageMutation();
 
   // Get unique parent categories for filter
-  const uniqueParents = categoriesData?.data 
+  const uniqueParents = Array.isArray(categoriesData?.data)
     ? [...new Set(categoriesData.data
         .filter(cat => cat.parentCategory)
         .map(cat => cat.parentCategory.categoryName))]
@@ -156,60 +157,22 @@ export default function CategoriesPage() {
     }
   };
 
-  const handleImageUpload = async (files) => {
-    if (!files || files.length === 0) return [];
-
-    try {
-      setUploadProgress(0);
-      
-      const uploadedImages = await uploadFilesWithProgress(
-        files,
-        {
-          maxFiles: 10, // Allow up to 10 images for categories
-          allowedTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
-          maxFileSize: 5 * 1024 * 1024, // 5MB per file
-          onProgress: (progress) => {
-            setUploadProgress(progress);
-          },
-          onError: (error) => {
-            toast.error(`Failed to upload images: ${error}`);
-            throw new Error(error);
-          }
-        }
-      );
-
-      // Create preview URLs for files and map to uploaded images
-      const filesArray = Array.isArray(files) ? files : [files];
-      const processedImages = uploadedImages.map((image, index) => {
-        const file = filesArray[index];
-        let preview = '';
-        if (file && file instanceof File) {
-          preview = URL.createObjectURL(file);
-        }
-        
-        return {
-          image: image.filename,
-          preview,
-          isDisplayed: index === 0, // First image is displayed by default
-          order: index,
-          uploadedAt: new Date().toISOString()
-        };
-      });
-
-      // Update form with new images
+  const handleSingleImageUpload = async (file) => {
+      // Only add image to form state, do not upload yet
+      if (!file) {
+        toast.error('No file selected for upload');
+        return;
+      }
+      const previewImage = {
+        preview: URL.createObjectURL(file),
+        isDisplayed: false,
+        order: (getValues('categoryImg') || []).length,
+        uploadedAt: new Date().toISOString(),
+        file: file // Keep reference to file for upload
+      };
       const currentImages = getValues('categoryImg') || [];
-      setValue('categoryImg', [...currentImages, ...processedImages]);
-
-      setUploadProgress(0);
-      toast.success(`${processedImages.length} image(s) uploaded successfully`);
-      return processedImages;
-    } catch (error) {
-      console.error('Image upload error:', error);
-      toast.error(error.message || 'Failed to upload images');
-      setUploadProgress(0);
-      return [];
-    }
-  };
+      setValue('categoryImg', [...currentImages, previewImage]);
+    };
 
   const removeImage = async (imageIndex) => {
     const currentImages = getValues('categoryImg') || [];
@@ -270,54 +233,84 @@ export default function CategoriesPage() {
 
   // Form submission
   const onSubmit = async (formData) => {
-    try {
-      // Validate required fields
-      if (!formData.categoryName?.trim()) {
-        toast.error('Category name is required');
-        return;
-      }
-
-      const submitData = {
-        categoryName: formData.categoryName.trim(),
-        description: formData.description?.trim() || '',
-        metaTitle: formData.metaTitle?.trim() || '',
-        metaDescription: formData.metaDescription?.trim() || '',
-        parentCategory: formData.parentCategory || null,
-        categoryImg: formData.categoryImg || []
-      };
-
-      let response;
-      if (editMode && selectedCategory) {
-        response = await updateCategory({
-          id: selectedCategory._id,
-          data: submitData
-        }).unwrap();
-        
-        if (response.status === true) {
-          toast.success('Category updated successfully');
-        } else {
-          toast.error(response.message || 'Failed to update category');
+      try {
+        // Validate required fields
+        if (!formData.categoryName?.trim()) {
+          toast.error('Category name is required');
           return;
         }
-      } else {
-        response = await createCategory(submitData).unwrap();
-        
-        if (response.status === true) {
-          toast.success('Category created successfully');
-        } else {
-          toast.error(response.message || 'Failed to create category');
-          return;
-        }
-      }
 
-      setShowModal(false);
-      resetForm();
-      refetch();
-    } catch (error) {
-      console.error('Submit error:', error);
-      toast.error(error.data?.message || error.message || 'Failed to save category');
-    }
-  };
+        // Upload images if any
+        let uploadedImages = [];
+        if (formData.categoryImg && formData.categoryImg.length > 0) {
+          for (const img of formData.categoryImg) {
+            if (img.file instanceof File) {
+              try {
+                setUploadProgress(0);
+                const uploadResult = await uploadFilesWithProgress([img.file], {
+                  maxFiles: 1,
+                  allowedTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+                  maxFileSize: 5 * 1024 * 1024,
+                  onProgress: (progress) => setUploadProgress(progress),
+                  onError: (error) => toast.error(`Failed to upload image: ${error}`)
+                });
+                if (uploadResult && uploadResult[0]) {
+                  uploadedImages.push({
+                    image: uploadResult[0].filename,
+                    isDisplayed: img.isDisplayed,
+                    order: img.order,
+                    uploadedAt: new Date().toISOString()
+                  });
+                }
+              } catch (error) {
+                toast.error('Failed to upload image');
+              }
+            } else if (img.image) {
+              // Already uploaded image
+              uploadedImages.push(img);
+            }
+          }
+        }
+
+        const submitData = {
+          categoryName: formData.categoryName.trim(),
+          description: formData.description?.trim() || '',
+          metaTitle: formData.metaTitle?.trim() || '',
+          metaDescription: formData.metaDescription?.trim() || '',
+          parentCategory: formData.parentCategory || null,
+          categoryImg: uploadedImages
+        };
+
+        let response;
+        if (editMode && selectedCategory) {
+          response = await updateCategory({
+            id: selectedCategory._id,
+            data: submitData
+          }).unwrap();
+          if (response.status === true) {
+            toast.success('Category updated successfully');
+          } else {
+            toast.error(response.message || 'Failed to update category');
+            return;
+          }
+        } else {
+          response = await createCategory(submitData).unwrap();
+          if (response.status === true) {
+            toast.success('Category created successfully');
+          } else {
+            toast.error(response.message || 'Failed to create category');
+            return;
+          }
+        }
+
+        setShowModal(false);
+        resetForm();
+        refetch();
+      } catch (error) {
+        console.error('Submit error:', error);
+        toast.error(error.data?.message || error.message || 'Failed to save category');
+      }
+    };
 
   // Loading state
   if (isLoading) {
@@ -380,36 +373,7 @@ export default function CategoriesPage() {
             placeholder="Search by name..."
             className="w-full"
           />
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Filter by Parent
-            </label>
-            <select
-              value={filterParent}
-              onChange={(e) => setFilterParent(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
-            >
-              <option value="">All Categories</option>
-              <option value="null">Root Categories</option>
-              {uniqueParents.map(parent => (
-                <option key={parent} value={parent}>{parent}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex items-end">
-            <button
-              onClick={() => {
-                setSearchTerm('');
-                setFilterParent('');
-                setCurrentPage(1);
-              }}
-              className="w-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-            >
-              Clear Filters
-            </button>
-          </div>
+          {/* Removed Filter by Parent and Clear Filters button as requested */}
         </div>
       </div>
 
@@ -437,7 +401,12 @@ export default function CategoriesPage() {
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {categoriesData?.data?.map((category) => (
+              {(Array.isArray(categoriesData?.data)
+                ? categoriesData.data
+                : categoriesData?.data
+                  ? [categoriesData.data]
+                  : []
+              ).map((category) => (
                 <tr key={category._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                   <td className="px-2 md:px-6 py-3 whitespace-nowrap">
                     <div className="flex items-center">
@@ -445,23 +414,30 @@ export default function CategoriesPage() {
                       <div className="block md:hidden w-full">
                         <div className="flex flex-col items-start">
                           <div className="h-10 w-10 flex-shrink-0 mb-2">
-                            {category.categoryImg?.[0] ? (
-                              <img
-                                className="h-10 w-10 rounded-full object-cover"
-                                src={category.categoryImg[0].image.startsWith('http') 
-                                     ? category.categoryImg[0].image 
-                                     : imageBaseUrl + category.categoryImg[0].image}
-                                alt={category.categoryName}
-                                onError={(e) => {
-                                  e.target.onerror = null; 
-                                  e.target.src = "https://placehold.co/100/lightgray/gray?text=No+Image";
-                                }}
-                              />
-                            ) : (
-                              <div className="h-10 w-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
-                                <MdCategory className="w-4 h-4 text-gray-500" />
-                              </div>
-                            )}
+                              {(() => {
+                                const mainImg = category.categoryImg?.find(img => img.isDisplayed) || category.categoryImg?.[0];
+                                if (mainImg) {
+                                  return (
+                                    <img
+                                      className="h-10 w-10 rounded-full object-cover"
+                                      src={mainImg.image.startsWith('http')
+                                        ? mainImg.image
+                                        : imageBaseUrl + mainImg.image}
+                                      alt={category.categoryName}
+                                      onError={(e) => {
+                                        e.target.onerror = null;
+                                        e.target.src = "https://placehold.co/100/lightgray/gray?text=No+Image";
+                                      }}
+                                    />
+                                  );
+                                } else {
+                                  return (
+                                    <div className="h-10 w-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
+                                      <MdCategory className="w-4 h-4 text-gray-500" />
+                                    </div>
+                                  );
+                                }
+                              })()}
                           </div>
                           <div className="text-sm font-medium text-gray-900 dark:text-white text-wrap">
                             {category.categoryName}
@@ -477,23 +453,30 @@ export default function CategoriesPage() {
                       {/* Desktop: image left of name */}
                       <div className="hidden md:flex items-center">
                         <div className="h-10 w-10 flex-shrink-0">
-                          {category.categoryImg?.[0] ? (
-                            <img
-                              className="h-10 w-10 rounded-full object-cover"
-                              src={category.categoryImg[0].image.startsWith('http') 
-                                   ? category.categoryImg[0].image 
-                                   : imageBaseUrl + category.categoryImg[0].image}
-                              alt={category.categoryName}
-                              onError={(e) => {
-                                e.target.onerror = null; 
-                                e.target.src = "https://placehold.co/100/lightgray/gray?text=No+Image";
-                              }}
-                            />
-                          ) : (
-                            <div className="h-10 w-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
-                              <MdCategory className="w-4 h-4 text-gray-500" />
-                            </div>
-                          )}
+                            {(() => {
+                              const mainImg = category.categoryImg?.find(img => img.isDisplayed) || category.categoryImg?.[0];
+                              if (mainImg) {
+                                return (
+                                  <img
+                                    className="h-10 w-10 rounded-full object-cover"
+                                    src={mainImg.image.startsWith('http')
+                                      ? mainImg.image
+                                      : imageBaseUrl + mainImg.image}
+                                    alt={category.categoryName}
+                                    onError={(e) => {
+                                      e.target.onerror = null;
+                                      e.target.src = "https://placehold.co/100/lightgray/gray?text=No+Image";
+                                    }}
+                                  />
+                                );
+                              } else {
+                                return (
+                                  <div className="h-10 w-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
+                                    <MdCategory className="w-4 h-4 text-gray-500" />
+                                  </div>
+                                );
+                              }
+                            })()}
                         </div>
                         <div className="ml-4">
                           <div className="text-sm font-medium text-gray-900 dark:text-white">
@@ -530,7 +513,7 @@ export default function CategoriesPage() {
                   </td>
                   
                   <td className="px-2 md:px-6 py-3 whitespace-nowrap text-center">
-                    <div className="flex items-center justify-center space-x-2">
+                    <div className="flex items-center justify-center space-x-4">
                       <button
                         onClick={() => handleEdit(category)}
                         className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
@@ -572,8 +555,8 @@ export default function CategoriesPage() {
 
       {/* Category Form Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10 p-4 mt-0 md:mt-14">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[75vh] md:max-h-[85vh] overflow-y-auto">
             <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 z-30">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
@@ -667,12 +650,31 @@ export default function CategoriesPage() {
 
                 <div>
                   <ImageUploader
-                    onUpload={handleImageUpload}
-                    multiple={true}
+                    label="Upload Category Image"
+                    onChange={handleSingleImageUpload}
                     accept="image/*"
-                    maxSize={5 * 1024 * 1024} // 5MB
-                    progress={uploadProgress}
+                    height={150}
+                    width={250}
+                    rounded="lg"
                   />
+                  
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
+                    Upload one image at a time. You can add multiple images to create a gallery.
+                  </p>
+                  
+                  {uploadProgress > 0 && (
+                    <div className="mt-4">
+                      <div className="bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                        <div 
+                          className="bg-blue-500 h-full transition-all duration-300"
+                          style={{ width: `${uploadProgress}%` }}
+                        />
+                      </div>
+                      <span className="text-xs text-gray-500 mt-1 block text-center">
+                        Uploading... {uploadProgress}%
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Display uploaded images */}
@@ -681,51 +683,51 @@ export default function CategoriesPage() {
                   control={control}
                   render={({ field: { value } }) => (
                     value && value.length > 0 && (
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {value.map((image, index) => (
-                          <div key={index} className="relative group">
-                            <img
-                              src={image.preview
-                                    ? image.preview
-                                    : (image.image.startsWith('http')
-                                        ? image.image
-                                        : imageBaseUrl + image.image)}
-                              alt={`Category Image ${index + 1}`}
-                              className="w-full h-24 object-cover rounded-lg"
-                              onError={(e) => {
-                                e.target.onerror = null;
-                                e.target.src = "https://placehold.co/300x200/lightgray/gray?text=Image+Not+Found";
-                              }}
-                            />
-                            <div className="absolute top-1 right-1 flex gap-1">
-                              <button
-                                type="button"
-                                onClick={() => toggleImageDisplay(index)}
-                                className={`p-1 rounded text-xs ${image.isDisplayed
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          {value.map((image, index) => (
+                            <div key={index} className="relative group">
+                              <img
+                                src={image.preview
+                                  ? image.preview
+                                  : (image.image.startsWith('http')
+                                    ? image.image
+                                    : imageBaseUrl + image.image)}
+                                alt={`Category Image ${index + 1}`}
+                                className={`w-full h-24 object-cover rounded-lg ${image.isDisplayed ? 'border-2 border-primary' : 'border'}`}
+                                onError={(e) => {
+                                  e.target.onerror = null;
+                                  e.target.src = "https://placehold.co/300x200/lightgray/gray?text=Image+Not+Found";
+                                }}
+                              />
+                              <div className="absolute top-1 right-1 flex gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => toggleImageDisplay(index)}
+                                  className={`p-1 rounded text-xs ${image.isDisplayed
                                     ? 'bg-green-500 text-white'
                                     : 'bg-gray-500 text-white'
                                   }`}
-                                title={image.isDisplayed ? 'Hide image' : 'Display image'}
-                              >
-                                {image.isDisplayed ? <FaEye className="w-3 h-3" /> : <FaEyeSlash className="w-3 h-3" />}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => removeImage(index)}
-                                className="p-1 bg-red-500 text-white rounded text-xs"
-                                disabled={deletingImageIds.includes(image._id)}
-                                title="Remove image"
-                              >
-                                {deletingImageIds.includes(image._id) ? (
-                                  <div className="animate-spin rounded-full h-3 w-3 border-t-1 border-b-1 border-white"></div>
-                                ) : (
-                                  <FaTrash className="w-3 h-3" />
-                                )}
-                              </button>
+                                  title={image.isDisplayed ? 'Main image' : 'Set as main image'}
+                                >
+                                  {image.isDisplayed ? <FaEye className="w-3 h-3" /> : <FaEyeSlash className="w-3 h-3" />}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => removeImage(index)}
+                                  className="p-1 bg-red-500 text-white rounded text-xs"
+                                  disabled={deletingImageIds.includes(image._id)}
+                                  title="Remove image"
+                                >
+                                  {deletingImageIds.includes(image._id) ? (
+                                    <div className="animate-spin rounded-full h-3 w-3 border-t-1 border-b-1 border-white"></div>
+                                  ) : (
+                                    <FaTrash className="w-3 h-3" />
+                                  )}
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
+                          ))}
+                        </div>
                     )
                   )}
                 />
