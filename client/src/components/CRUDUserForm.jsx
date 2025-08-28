@@ -82,12 +82,26 @@ const AddUserForm = ({ editMode = false, userData }) => {
   // Populate formData after userData loads (for editMode)
   useEffect(() => {
     if (editMode && userData) {
-      setFormData((prev) => ({
-        ...prev,
-        ...defaultFormData,
-        ...userData,
-        password: "", // never prefill
-      }));
+      // Debug the userData from API
+      console.log('userData from API:', userData);
+      console.log('isBlocked value from API:', userData.isBlocked);
+      
+      setFormData((prev) => {
+        const newData = {
+          ...prev,
+          ...defaultFormData,
+          ...userData,
+          password: "", // never prefill
+        };
+        
+        // Make sure isBlocked is explicitly a boolean
+        if (userData.isBlocked !== undefined) {
+          newData.isBlocked = Boolean(userData.isBlocked);
+        }
+        
+        console.log('Updated formData:', newData);
+        return newData;
+      });
     }
   }, [editMode, userData]);
 
@@ -114,7 +128,15 @@ const AddUserForm = ({ editMode = false, userData }) => {
         error = validateUser.fullName(value);
         break;
       case "cus_dob":
-        error = isDateOfBirth(value);
+        // Always validate as string
+        if (value instanceof Date && !isNaN(value.getTime())) {
+          const day = value.getDate().toString().padStart(2, '0');
+          const month = (value.getMonth() + 1).toString().padStart(2, '0');
+          const year = value.getFullYear();
+          error = isDateOfBirth(`${day}/${month}/${year}`);
+        } else {
+          error = isDateOfBirth(typeof value === 'string' ? value.trim() : '');
+        }
         break;
       case "cus_email":
         error = isValidEmail(value);
@@ -330,14 +352,43 @@ const AddUserForm = ({ editMode = false, userData }) => {
     ];
     if (!editMode) requiredFields.push("password");
 
+    function formatDateToDDMMYYYY(dateString) {
+  const date = new Date(dateString);
+  if (isNaN(date)) return dateString; // invalid হলে 그대로 ফেরত দাও
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+
     // Validate required fields
     requiredFields.forEach((field) => {
       if (!formData[field]) {
         errors[field] = "This field is required";
       } else {
-        const error = validateField(field, formData[field]);
+        if (field === "cus_dob") {
+      let dob = formData[field];
+
+      // ✅ যদি ISO date (2001-01-09T18:00:00.000Z) আসে → DD/MM/YYYY তে convert করো
+      if (/^\d{4}-\d{2}-\d{2}T/.test(dob)) {
+        dob = formatDateToDDMMYYYY(dob);
+        formData[field] = dob; // 👈 formData আপডেট করে রাখলাম
+      }
+
+      // ✅ এখন regex দিয়ে চেক করো (DD/MM/YYYY বা D/M/YYYY)
+      if (/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/.test(dob)) {
+        const error = validateField(field, dob);
         if (error) {
           errors[field] = error;
+        }
+      } else {
+        errors[field] = "Invalid date format (DD/MM/YYYY)";
+      }
+        } else {
+          const error = validateField(field, formData[field]);
+          if (error) {
+            errors[field] = error;
+          }
         }
       }
     });
@@ -525,7 +576,6 @@ function toCamelCase(str) {
                 new Date(new Date().setFullYear(new Date().getFullYear() - 16))
               }
               required={true}
-              placeholder="DD/MM/YYYY"
               className="mb-2 w-full"
               onChange={(value) => {
                 // Validate the date immediately when it changes
@@ -538,13 +588,13 @@ function toCamelCase(str) {
             />
           </div>
           <CustomSelect
-                label="Gender"
-                options={["Male", "Female", "Other"]}
-                selected={formData.gender}
-                setSelected={(value) => setFormData((prev) => ({ ...prev, gender: value }))}
-                placeholder="Select gender..."
-                error={validationErrors.gender}
-              />
+            label="Gender"
+            options={[{ value: "Male", label: "Male" }, { value: "Female", label: "Female" }, { value: "Other", label: "Other" }]}
+            selected={formData.gender}
+            setSelected={(value) => setFormData((prev) => ({ ...prev, gender: value }))}
+            placeholder="Select gender..."
+            error={validationErrors.gender}
+          />
           <CustomInput
             label="Phone"
             type="tel"
@@ -784,7 +834,7 @@ function toCamelCase(str) {
             <div>
               <CustomSelect
                 label="Role"
-                options={["customer", "admin", "manager", "seller"]}
+                options={[{ value: "customer", label: "Customer" }, { value: "admin", label: "Admin" }, { value: "manager", label: "Manager" }, { value: "seller", label: "Seller" }]}
                 selected={formData.role}
                 setSelected={(value) => setFormData((prev) => ({ ...prev, role: value }))}
                 placeholder="Select role..."
@@ -792,22 +842,25 @@ function toCamelCase(str) {
             </div>
             <div>
               <CustomSelect
-            label="Is Verified"
-            options={["Verified", "Not Verified"]}
-            selected={formData.isVerified ? "Verified" : "Not Verified"}
-            setSelected={(value) => setFormData((prev) => ({ ...prev, isVerified: value === "Verified" }))}
-            placeholder="Select verification status..."
-          />
+                label="Is Verified"
+                options={[{ value: true, label: "Verified" }, { value: false, label: "Not Verified" }]}
+                selected={formData.isVerified}
+                setSelected={(value) => setFormData((prev) => ({ ...prev, isVerified: value }))}
+                placeholder="Select verification status..."
+              />
             </div>
-            <div>
-              <CustomSelect
-            label="Is Blocked"
-            options={["Active", "Blocked"]}
-            selected={formData.isBlocked ? "Blocked" : "Active"}
-            setSelected={(value) => setFormData((prev) => ({ ...prev, isBlocked: value === "Blocked" }))}
-            placeholder="Select status..."
-          />
-            </div>
+           <div>
+  <CustomSelect
+    label="Is Blocked"
+    options={[
+      { value: false, label: "Active" },
+      { value: true, label: "Blocked" },
+    ]}
+    selected={formData.isBlocked}
+    setSelected={(value) => setFormData((prev) => ({ ...prev, isBlocked: value }))}
+    placeholder="Select status..."
+  />
+</div>
           </div>
 
           {editMode && (

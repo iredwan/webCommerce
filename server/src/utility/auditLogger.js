@@ -3,6 +3,7 @@
  */
 
 import AuditLog from "../model/AuditLog.js";
+import mongoose from "mongoose";
 
 /**
  * Create an audit log entry for product operations
@@ -175,6 +176,24 @@ export const logPublishStatusChange = async (req, product, newStatus) => {
     newValues: { isPublished: newStatus },
     changes: ['isPublished'],
     description: `Product ${newStatus ? 'published' : 'unpublished'}: ${product.name}`,
+    severity: 'LOW'
+  });
+};
+
+/**
+ * Create audit log for image deletion operations
+ */
+export const logImageDeletion = async (req, imageName, productId = null) => {
+  const userInfo = extractUserInfo(req);
+  
+  return await createProductAuditLog({
+    action: 'UPDATE', // Using UPDATE as image operations are considered updates
+    modelId: productId || new mongoose.Types.ObjectId(), // Use provided productId or generate generic one
+    ...userInfo,
+    oldValues: { imageName },
+    newValues: { deletedImage: imageName },
+    changes: ['image_deletion'],
+    description: `Deleted product image: ${imageName}`,
     severity: 'LOW'
   });
 };

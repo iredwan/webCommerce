@@ -2,6 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Z-index layers for components */
+.modal-header {
+  z-index: 30;
+}
+
+.datepicker-layer {
+  z-index: 99999;
+}
+
+.form-elements {
+  z-index: 10;
+}
 
 
 .swal2-confirm-custom {
@@ -30,4 +42,17 @@
     background-color: #4b5563 !important; 
     scale: 1.05;
   }
+}
+
+
+/* Chrome, Safari, Edge, Opera */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
 }

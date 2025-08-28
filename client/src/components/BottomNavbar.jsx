@@ -13,7 +13,7 @@ import { MdDashboardCustomize } from "react-icons/md";
 
 const BottomNavbar = () => {
   const userInfo = useSelector(selectUserInfo);
-  const userRole = userInfo?.role;
+  const userRole = userInfo?.role || "customer";
 
   const navItems = [
   { href: userRole !== "customer" ? `/dashboard/${userRole}/dashboard` : "/",

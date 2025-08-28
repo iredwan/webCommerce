@@ -17,22 +17,37 @@ export const isValidEmail = (value) => (!value ? 'Email is required' : regex.ema
 export const isValidPhone = (value) => (!value ? 'Phone is required' : regex.phoneBD.test(value.replace(/^\+880/, '')) ? null : 'Invalid Bangladeshi phone number');
 export const isDateOfBirth = (value) => {
   if (!value) return 'Date of birth is required';
-  
-  // Parse DD/MM/YYYY format
-  const [day, month, year] = value.split('/').map(Number);
-  const date = new Date(year, month - 1, day); // month is 0-based in JS Date
+  let day, month, year, date;
+  if (value instanceof Date && !isNaN(value.getTime())) {
+    day = value.getDate();
+    month = value.getMonth() + 1;
+    year = value.getFullYear();
+    date = value;
+  } else if (typeof value === 'string') {
+    const trimmed = value.trim();
+    let dateParts = trimmed.split(/[\/\-]/);
+    if (dateParts.length !== 3) return 'Invalid date format (DD/MM/YYYY)';
+    day = parseInt(dateParts[0], 10);
+    month = parseInt(dateParts[1], 10);
+    year = parseInt(dateParts[2], 10);
+    if (isNaN(day) || isNaN(month) || isNaN(year)) return 'Invalid date format (DD/MM/YYYY)';
+    date = new Date(year, month - 1, day);
+  } else {
+    return 'Invalid date format (DD/MM/YYYY)';
+  }
   const today = new Date();
   const minAge = 16;
   const maxAge = 50;
-  
-  // Check if date is valid
-  if (isNaN(date.getTime()) || 
-      day < 1 || day > 31 || 
-      month < 1 || month > 12 || 
-      year < 1900 || year > today.getFullYear()) {
+  // Check if date is valid and matches input
+  if (
+    isNaN(date.getTime()) ||
+    day < 1 || day > 31 ||
+    month < 1 || month > 12 ||
+    year < 1900 || year > today.getFullYear() ||
+    date.getDate() !== day || date.getMonth() !== month - 1 || date.getFullYear() !== year
+  ) {
     return 'Invalid date format (DD/MM/YYYY)';
   }
-  
   // Calculate age
   const age = today.getFullYear() - date.getFullYear();
   const monthDiff = today.getMonth() - date.getMonth();

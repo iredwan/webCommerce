@@ -12,13 +12,11 @@ const variantSchema = new mongoose.Schema(
   {
     sku: {
       type: String,
-      required: true,
-      unique: true,
-      index: true,
       trim: true,
     },
     color: { type: String },
     size: { type: String },
+    unit: { type: String, default: '' },
     price: { type: Number, required: true },
     stock: { type: Number, required: true, min: 0 },
     // Per-variant discount fields
@@ -48,7 +46,9 @@ const variantSchema = new mongoose.Schema(
     },
     discountSchedule: {
       startDate: Date,
+      startTime: { type: String, default: '00:00' },
       endDate: Date,
+      endTime: { type: String, default: '23:59' },
       isActive: { type: Boolean, default: false }
     },
     images: [imagesSchema]
@@ -118,7 +118,9 @@ const productSchema = new mongoose.Schema(
     },
     discountSchedule: {
       startDate: Date,
+      startTime: { type: String, default: '00:00' },
       endDate: Date,
+      endTime: { type: String, default: '23:59' },
       isActive: { type: Boolean, default: false }
     },
     color: {
@@ -126,6 +128,10 @@ const productSchema = new mongoose.Schema(
     },
     size: {
       type: String,
+    },
+    unit: {
+      type: String,
+      default: '',
     },
     totalStock: {
       type: Number,
@@ -181,11 +187,32 @@ productSchema.virtual('discountedPrice').get(function () {
   return Math.max(0, this.basePrice - (this.basePrice * this.discount) / 100);
 });
 
-// 🔄 Pre-save hook: Stock only
+// 🔄 Virtual field: discountedPrice in variants
+// Variant-level virtual: discountedPrice (for variant price)
+variantSchema.virtual('discountedPrice').get(function () {
+  if (this.discountType === 'flat') {
+    return Math.max(0, this.price - this.discount);
+  }
+  // percent
+  return Math.max(0, this.price - (this.price * this.discount) / 100);
+});
+
+// 🔄 Pre-save hook: Stock handling
 productSchema.pre('save', function (next) {
-  this.totalStock = this.variants.reduce((sum, v) => sum + v.stock, 0);
+  if (this.variants.length > 0) {
+    // If totalStock is manually set to a positive number, use the manual value
+    // Otherwise, calculate from variants
+    if (this.totalStock === undefined || this.totalStock === null || this.totalStock === 0) {
+      this.totalStock = this.variants.reduce((sum, v) => sum + v.stock, 0);
+    }
+    // If totalStock is manually set to a value > 0, keep the manual value
+  } else {
+    // No variants - use manually set totalStock, default to 0 if not provided
+    this.totalStock = this.totalStock !== undefined ? this.totalStock : 0;
+  }
   next();
 });
+
 
 // 🔄 Soft delete middleware
 productSchema.pre(/^find/, function (next) {
@@ -194,6 +221,8 @@ productSchema.pre(/^find/, function (next) {
   }
   next();
 });
+
+variantSchema.index({ sku: 1 }, { unique: true, sparse: true });
 
 const Product = mongoose.model('product', productSchema);
 

@@ -4,6 +4,7 @@ import {
     getCategory,
     getCategoryByIdForAdmin,
     getAllCategories,
+    getCategoryByName,
     updateCategory,
     deleteCategoryImage,
     deleteCategory
@@ -15,6 +16,7 @@ const router = express.Router();
 // Public routes
 router.get('/get-all', getAllCategories);
 router.get('/get/:id', getCategory);
+router.get('/get-by-name/:name', getCategoryByName);
 
 // Protected routes
 router.get('/admin/get/:id', protect, restrictTo("admin", "manager"), getCategoryByIdForAdmin);

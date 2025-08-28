@@ -34,10 +34,8 @@ export const validateProductCreation = (productData) => {
     errors.push("Valid base price is required and must be greater than 0.");
   }
 
-  // Variants validation
-  if (!productData.variants || !Array.isArray(productData.variants) || productData.variants.length === 0) {
-    errors.push("At least one product variant is required.");
-  } else {
+  // Variants validation - variants are now optional
+  if (productData.variants && Array.isArray(productData.variants) && productData.variants.length > 0) {
     productData.variants.forEach((variant, index) => {
       if (!variant.sku || typeof variant.sku !== 'string' || variant.sku.trim().length === 0) {
         errors.push(`Variant ${index + 1}: SKU is required.`);
@@ -77,6 +75,22 @@ export const validateProductCreation = (productData) => {
 
   if (productData.tags && !Array.isArray(productData.tags)) {
     errors.push("Tags must be an array.");
+  }
+
+  // TotalStock validation
+  if (productData.totalStock !== undefined) {
+    if (isNaN(productData.totalStock) || productData.totalStock < 0) {
+      errors.push("Total stock must be a number 0 or greater.");
+    }
+    
+    // If no variants, totalStock is required
+    if ((!productData.variants || productData.variants.length === 0) && 
+        (productData.totalStock === undefined || productData.totalStock === null || productData.totalStock === '')) {
+      errors.push("Total stock is required when no variants are provided.");
+    }
+  } else if (!productData.variants || productData.variants.length === 0) {
+    // If no variants and no totalStock provided, it's an error
+    errors.push("Total stock is required when no variants are provided.");
   }
 
   return {
@@ -157,6 +171,13 @@ export const validateProductUpdate = (updateData) => {
 
   if (updateData.tags !== undefined && !Array.isArray(updateData.tags)) {
     errors.push("Tags must be an array.");
+  }
+
+  // TotalStock validation for updates
+  if (updateData.totalStock !== undefined) {
+    if (isNaN(updateData.totalStock) || updateData.totalStock < 0) {
+      errors.push("Total stock must be a number 0 or greater.");
+    }
   }
 
   return {

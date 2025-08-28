@@ -18,6 +18,9 @@ export const apiSlice = createApi({
     'District',
     'PoliceStation',
     'UserInfo',
+    'Products',
+    'ProductStats',
+    'Categories',
   ],
   endpoints: () => ({}),
 });

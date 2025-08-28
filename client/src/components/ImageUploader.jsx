@@ -83,7 +83,7 @@ const ImageUpload = ({
   const iconSize = width ? Math.min(height, width) * 0.25 : height * 0.25;
 
   return (
-    <div className={`group relative ${className}`}>
+    <div className={`group relative ${className} form-elements`}>
       {label && (
         <label
           htmlFor={`image-upload-${name}`}

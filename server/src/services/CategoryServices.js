@@ -148,6 +148,36 @@ export const getAllCategoriesService = async (req) => {
     }
 };
 
+// get category by categoryName
+/**
+ * Get a single category by categoryName
+ * @param {Object} req - Express request object
+ * @returns {Promise<Object>} Result object with status and data
+ */
+export const getCategoryByNameService = async (req) => {
+    try {
+        const categoryName = RegExp(req.params.name, 'i');
+        const category = await CategoryModel.findOne({ categoryName });
+        if (!category) {
+            return {
+                status: false,
+                message: "Category not found"
+            };
+        }
+        return {
+            status: true,
+            data: category
+        };
+    } catch (error) {
+        console.error("Get category error:", error);
+        return {
+            status: false,
+            message: "Failed to fetch category",
+            error: error.message
+        };
+    }
+};
+
 /**
  * Update category by ID
  * @param {Object} req - Express request object

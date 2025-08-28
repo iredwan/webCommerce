@@ -11,15 +11,20 @@ import {
   logProductDeletion,
   logStockUpdate,
   logDiscountOperation,
-  logPublishStatusChange
+  logPublishStatusChange,
+  createProductAuditLog,
+  extractUserInfo,
+  logImageDeletion
 } from "../utility/auditLogger.js";
 import mongoose from "mongoose";
 import AuditLog from "../model/AuditLog.js";
+import { deleteFile } from "../utility/fileUtils.js";
 const ObjectId = mongoose.Types.ObjectId; 
 
 export const createProductService = async (req) => {
   try {
     const reqBody = req.body;
+    console.log(reqBody);
 
     // Validate input data
     const validation = validateProductCreation(reqBody);
@@ -34,11 +39,21 @@ export const createProductService = async (req) => {
     reqBody.name = reqBody.name.trim();
     reqBody.slug = await generateUniqueSlug(reqBody.name, ProductModel);
 
-    const totalStock = reqBody.variants.reduce((sum, v) => {
-      return sum + parseInt(v.stock);
-    }, 0);
-    
-    reqBody.totalStock = totalStock;
+    // Handle totalStock based on variants presence
+    if (reqBody.variants && reqBody.variants.length > 0) {
+      // If variants exist, calculate totalStock from variants (unless manually overridden)
+      const calculatedStock = reqBody.variants.reduce((sum, v) => {
+        return sum + parseInt(v.stock);
+      }, 0);
+      
+      // Use manually set totalStock if provided and > 0, otherwise use calculated
+      if (!reqBody.totalStock || reqBody.totalStock === 0) {
+        reqBody.totalStock = calculatedStock;
+      }
+    } else {
+      // No variants - use the provided totalStock or default to 0
+      reqBody.totalStock = reqBody.totalStock || 0;
+    }
 
     const product = await ProductModel.create(reqBody);
     
@@ -331,6 +346,8 @@ export const updateProductService = async (productId, req) => {
     }
 
     const reqBody = req.body;
+    console.log('Update request body:', reqBody);
+    console.log('totalStock in request:', reqBody.totalStock);
     
     // Validate input data
     const validation = validateProductUpdate(reqBody);
@@ -362,13 +379,33 @@ export const updateProductService = async (productId, req) => {
       reqBody.slug = await generateUniqueSlug(reqBody.name, ProductModel);
     }
 
-    // Validate and calculate total stock if variants are updated
+    // Handle totalStock logic based on variants presence or updates
     if (reqBody.variants && Array.isArray(reqBody.variants)) {
-      const totalStock = reqBody.variants.reduce((sum, v) => {
-        return sum + parseInt(v.stock);
-      }, 0);
-      reqBody.totalStock = totalStock;
+      if (reqBody.variants.length > 0) {
+        // If variants exist, calculate totalStock from variants (unless manually overridden)
+        const calculatedStock = reqBody.variants.reduce((sum, v) => {
+          return sum + parseInt(v.stock);
+        }, 0);
+        
+        // Use manually set totalStock if provided and > 0, otherwise use calculated
+        if (!reqBody.totalStock || reqBody.totalStock === 0) {
+          reqBody.totalStock = calculatedStock;
+        }
+      } else {
+        // No variants - preserve the provided totalStock or keep existing
+        // Don't override totalStock if it's manually set
+        if (reqBody.totalStock === undefined) {
+          reqBody.totalStock = existingProduct.totalStock || 0;
+        }
+      }
+    } else if (reqBody.totalStock !== undefined) {
+      // totalStock is being updated without variants change
+      // Just use the provided totalStock value
+      // (This handles direct totalStock updates)
     }
+
+    console.log('Final reqBody before database update:', reqBody);
+    console.log('Final totalStock value:', reqBody.totalStock);
 
     const updatedProduct = await ProductModel.findByIdAndUpdate(
       productId,
@@ -1100,7 +1137,9 @@ export const scheduleDiscountService = async (productId, startDate, endDate, dis
       discountType: discountData.type,
       discountSchedule: {
         startDate: new Date(startDate),
+        startTime: discountData.startTime || '00:00',
         endDate: new Date(endDate),
+        endTime: discountData.endTime || '23:59',
         isActive: false
       }
     };
@@ -1587,3 +1626,27 @@ export const promoteProductOnBannerService = async (productId, req) => {
   }
 };
 
+export const deleteProductImageService = async (imageName, req) => {
+  try {
+    if (!imageName) {
+      return { status: false, message: "Invalid image name." };
+    }
+    
+    await deleteFile(imageName);
+    
+    // Create audit log for image deletion
+    await logImageDeletion(req, imageName);
+    
+    return {
+      status: true,
+      message: "Product image deleted successfully."
+    };
+  } catch (e) {
+    console.error("Delete product image error:", e);
+    return {
+      status: false,
+      error: e.message || e.toString(),
+      message: "Failed to delete product image."
+    };
+  }
+};

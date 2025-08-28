@@ -40,7 +40,8 @@ import {
   incrementProductViewController,
   // Promotional & SEO Tools
   updateSlugController,
-  promoteProductOnBannerController
+  promoteProductOnBannerController,
+  deleteProductImageController
 } from "../controllers/ProductController.js";
 import { protect, restrictTo } from "../middlewares/AuthMiddleware.js";
 
@@ -104,5 +105,6 @@ router.delete("/bulk", protect, restrictTo("admin", "manager"), bulkDeleteProduc
 // Individual operations
 router.put("/update/:id", protect, restrictTo("admin", "manager"), updateProductController);
 router.delete("/:id", protect, restrictTo("admin", "manager"), deleteProductController);
+router.delete("/image/:imageName", protect, restrictTo("admin", "manager"), deleteProductImageController);
 
 export default router;

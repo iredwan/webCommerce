@@ -39,7 +39,8 @@ import {
   incrementProductViewService,
   // Promotional & SEO Tools
   updateSlugService,
-  promoteProductOnBannerService
+  promoteProductOnBannerService,
+  deleteProductImageService
 } from "../services/ProductServices.js";
 
 export const createProductController = async (req, res) => {
@@ -610,6 +611,22 @@ export const promoteProductOnBannerController = async (req, res) => {
     return res.status(response.status ? 200 : 400).json(response);
   } catch (error) {
     console.error("Promote product on banner controller error:", error);
+    return res.status(500).json({
+      status: "error",
+      message: "Internal Server Error",
+      error: error.toString()
+    });
+  }
+};
+
+
+export const deleteProductImageController = async (req, res) => {
+  try {
+    const { imageName } = req.params;
+    const response = await deleteProductImageService(imageName, req);
+    return res.status(response.status ? 200 : 400).json(response);
+  } catch (error) {
+    console.error("Delete product image controller error:", error);
     return res.status(500).json({
       status: "error",
       message: "Internal Server Error",

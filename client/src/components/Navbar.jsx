@@ -15,7 +15,8 @@ import {
   selectUserInfo,
   selectIsAuthenticated,
 } from "@/features/userInfo/userInfoSlice";
-import { FiLogOut, FiSettings, FiUser } from 'react-icons/fi';
+import { FiLogOut, FiSettings, FiShoppingCart, FiUser } from 'react-icons/fi';
+import { FaOpencart } from 'react-icons/fa6';
 
 const Navbar = () => {
   const currentPath = usePathname();
@@ -91,8 +92,8 @@ const Navbar = () => {
 
   const closeMenu = () => setIsMenuOpen(false);
 
-  const userRole = user?.role;
-  const roleRoutes ={
+  const userRole = user?.role || "customer";
+  const roleRoutes = {
     admin: "/dashboard/admin",
     manager: "/dashboard/manager",
     seller: "/dashboard/seller",
@@ -137,6 +138,18 @@ const Navbar = () => {
                 </NavLink>
               )}
           </div>
+          
+              {/*Cart Icon */}
+              {userRole === "customer" && (
+                <div className='hidden md:flex items-center relative'>
+                <FaOpencart className="mr-1 text-text text-2xl" />
+                {/* Cart Counter */}
+                {/* {useSelector((state) => state.cart?.items?.length) > 0 && ( */}
+                  <span className="absolute -top-3 -right-3 bg-primary text-text text-xs rounded-full px-1.5 py-0.5">
+                    {/* {useSelector((state) => state.cart?.items?.length)} */}10
+                  </span>
+                {/* )} */}
+              </div>)}
 
           <div className="hidden md:flex">
             {isAuthenticated ? (

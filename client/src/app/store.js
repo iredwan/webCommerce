@@ -10,6 +10,8 @@ import districtReducer from '../features/district/districtSlice';
 import policeStationReducer from '../features/policeStation/policeStationSlice';
 import { apiSlice } from '../features/api/apiSlice';
 import userInfoReducer from '../features/userInfo/userInfoSlice';
+import productReducer from '../features/product/productSlice';
+import categoryReducer from '../features/category/categorySlice';
 // import other reducers...
 
 export const store = configureStore({
@@ -22,6 +24,8 @@ export const store = configureStore({
     district: districtReducer,
     policeStation: policeStationReducer,
     webColor: webColorReducer,
+    product: productReducer,
+    category: categoryReducer,
 
     [apiSlice.reducerPath]: apiSlice.reducer,
     // ...

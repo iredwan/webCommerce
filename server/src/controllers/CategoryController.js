@@ -3,6 +3,7 @@ import {
     getCategoryService, 
     getCategoryByIdForAdminService,
     getAllCategoriesService, 
+    getCategoryByNameService,
     updateCategoryService,
     deleteCategoryImageService,
     deleteCategoryService 
@@ -79,6 +80,20 @@ export const getAllCategories = async (req, res) => {
         return res.status(500).json({
             status: false,
             message: "Internal server error while fetching categories"
+        });
+    }
+};
+
+// get category by categoryName
+export const getCategoryByName = async (req, res) => {
+    try {
+        const result = await getCategoryByNameService(req);
+        return res.status(result.status ? 200 : 404).json(result);
+    } catch (error) {
+        console.error("Get category by name controller error:", error);
+        return res.status(500).json({
+            status: false,
+            message: "Internal server error while fetching category"
         });
     }
 };
