@@ -31,6 +31,7 @@ const CustomDatePicker = ({
   placeholder = "DD/MM/YYYY",
   maxDate = new Date(),
   minDate = null,
+  required = false,
 }) => {
   const [selectedDate, setSelectedDate] = useState(null);
 
@@ -111,9 +112,9 @@ const CustomDatePicker = ({
   return (
     <div className="relative w-full">
       {label && (
-        <label className="text-gray-700 dark:text-gray-300 block mb-1">
-          {label}
-        </label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
       )}
       <DatePicker
         selected={selectedDate}

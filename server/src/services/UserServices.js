@@ -104,7 +104,7 @@ export const getUserService = async (req) => {
   try {
     const userId = new ObjectId(req.user.id);
 
-    let data = await UserModel.findOne({ _Id: userId });
+    let data = await UserModel.findOne({ _id: userId });
 
     return { status: true, data: data };
   } catch (error) {

@@ -18,6 +18,8 @@ import UserInfoApi from "./src/routes/UserInfoApi.js"
 import uploadFileApi from "./src/routes/UploadFileApi.js";
 import ProductApi from "./src/routes/ProductApi.js";
 import CategoryApi from "./src/routes/CategoryApi.js";
+import OrderApi from "./src/routes/OrderApi.js";
+import InvoiceApi from "./src/routes/InvoiceApi.js";
 
 dotenv.config();
 const app = express();
@@ -72,6 +74,8 @@ app.use("/api/ps", PSApi)
 app.use("/api/user-info", UserInfoApi)
 app.use("/api/products", ProductApi);
 app.use("/api/category", CategoryApi);
+app.use("/api/orders", OrderApi);
+app.use("/api/invoices", InvoiceApi);
 
 app.use("/upload-file", express.static("uploads"));
 

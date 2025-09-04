@@ -136,8 +136,7 @@ const SelectComponent = ({
           className="absolute inset-y-0 right-0 flex items-center pr-3 cursor-pointer"
           onClick={handleDropdownClick}
         >
-          <FaChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showSuggestions ? 'rotate-180' : ''}`} />
-        </div>
+         {disabled === false && <FaChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${showSuggestions ? 'rotate-180' : ''}`} />}        </div>
       </div>
       
       {error && (

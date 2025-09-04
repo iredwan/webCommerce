@@ -32,7 +32,7 @@ import uploadFilesWithProgress from "@/utils/fileUpload";
 import deleteConfirm from "@/utils/deleteConfirm";
 
 
-const AddUserForm = ({ editMode = false, userData }) => {
+const AddUserForm = ({ editMode = false, userData, isUserProfile = false }) => {
   const id = userData?._id
   const router = useRouter();
   const [addUser, { isLoading }] = useRegisterWithRefMutation();
@@ -79,27 +79,21 @@ const AddUserForm = ({ editMode = false, userData }) => {
   const [formData, setFormData] = useState(defaultFormData);
   const refUserData = userData?.ref_userId;
   const editedByUserData = userData?.editBy;
-  // Populate formData after userData loads (for editMode)
   useEffect(() => {
     if (editMode && userData) {
-      // Debug the userData from API
-      console.log('userData from API:', userData);
-      console.log('isBlocked value from API:', userData.isBlocked);
       
       setFormData((prev) => {
         const newData = {
           ...prev,
           ...defaultFormData,
           ...userData,
-          password: "", // never prefill
+          password: "", 
         };
         
         // Make sure isBlocked is explicitly a boolean
         if (userData.isBlocked !== undefined) {
           newData.isBlocked = Boolean(userData.isBlocked);
         }
-        
-        console.log('Updated formData:', newData);
         return newData;
       });
     }
@@ -592,6 +586,7 @@ function toCamelCase(str) {
             options={[{ value: "Male", label: "Male" }, { value: "Female", label: "Female" }, { value: "Other", label: "Other" }]}
             selected={formData.gender}
             setSelected={(value) => setFormData((prev) => ({ ...prev, gender: value }))}
+            required
             placeholder="Select gender..."
             error={validationErrors.gender}
           />
@@ -825,85 +820,91 @@ function toCamelCase(str) {
       </div>
 
       {editMode && (
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md w-full max-w-4xl mx-auto mt-6">
-          <h2 className="text-2xl font-bold mb-6 dark:text-white text-center md:text-left flex flex-col items-center md:flex-row md:items-start">
-            <FaCheckCircle className="text-primary mb-1 md:mb-0 md:mr-1" />
-            <span>Additional Information</span>
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <CustomSelect
-                label="Role"
-                options={[{ value: "customer", label: "Customer" }, { value: "admin", label: "Admin" }, { value: "manager", label: "Manager" }, { value: "seller", label: "Seller" }]}
-                selected={formData.role}
-                setSelected={(value) => setFormData((prev) => ({ ...prev, role: value }))}
-                placeholder="Select role..."
-              />
-            </div>
-            <div>
-              <CustomSelect
-                label="Is Verified"
-                options={[{ value: true, label: "Verified" }, { value: false, label: "Not Verified" }]}
-                selected={formData.isVerified}
-                setSelected={(value) => setFormData((prev) => ({ ...prev, isVerified: value }))}
-                placeholder="Select verification status..."
-              />
-            </div>
-           <div>
-  <CustomSelect
-    label="Is Blocked"
-    options={[
-      { value: false, label: "Active" },
-      { value: true, label: "Blocked" },
-    ]}
-    selected={formData.isBlocked}
-    setSelected={(value) => setFormData((prev) => ({ ...prev, isBlocked: value }))}
-    placeholder="Select status..."
-  />
-</div>
-          </div>
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md w-full max-w-4xl mx-auto mt-6">
+                <h2 className="text-2xl font-bold mb-6 dark:text-white text-center md:text-left flex flex-col items-center md:flex-row md:items-start">
+                <FaCheckCircle className="text-primary mb-1 md:mb-0 md:mr-1" />
+                <span>Additional Information</span>
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <CustomSelect
+                  label="Role"
+                  options={[{ value: "customer", label: "Customer" }, { value: "admin", label: "Admin" }, { value: "manager", label: "Manager" }, { value: "seller", label: "Seller" }]}
+                  selected={formData.role}
+                  setSelected={(value) => setFormData((prev) => ({ ...prev, role: value }))}
+                  placeholder="Select role..."
+                  disabled={isUserProfile === true && editMode}
+                  className={isUserProfile === true && editMode ? "opacity-60 cursor-not-allowed" : ""}
+                  />
+                </div>
+                <div>
+                  <CustomSelect
+                  label="Is Verified"
+                  options={[{ value: true, label: "Verified" }, { value: false, label: "Not Verified" }]}
+                  selected={formData.isVerified}
+                  setSelected={(value) => setFormData((prev) => ({ ...prev, isVerified: value }))}
+                  placeholder="Select verification status..."
+                  disabled={isUserProfile === true && editMode}
+                  className={isUserProfile === true && editMode ? "opacity-60 cursor-not-allowed" : ""}
+                  />
+                </div>
+                 <div>
+                  <CustomSelect
+                  label="Is Blocked"
+                  options={[
+                    { value: false, label: "Active" },
+                    { value: true, label: "Blocked" },
+                  ]}
+                  selected={formData.isBlocked}
+                  setSelected={(value) => setFormData((prev) => ({ ...prev, isBlocked: value }))}
+                  placeholder="Select status..."
+                  disabled={isUserProfile === true && editMode}
+                  className={isUserProfile === true && editMode ? "opacity-60 cursor-not-allowed" : ""}
+                  />
+                </div>
+                </div>
 
-          {editMode && (
-          <div className="w-full max-w-4xl mx-auto mt-6">
-            <div className="flex justify-end">
-              <button
-                onClick={handleSubmit}
-                className="bg-background text-text px-4 py-2 rounded-lg "
-                disabled={isLoading || isUpdating}
-              >
-                {isLoading || isUpdating ? "Updating..." : "Update"}
-              </button>
-            </div>
-          </div>
-        )}
-          
-          <div className="grid gris-cols-1 md:grid-cols-2 gap-6 mt-6">
-            {refUserData && (
-              <div className="w-full px-4 py-2.5 border border-neutral-300 rounded-lg dark:bg-gray-700 dark:text-white">
-                <h1 className="text-center text-xl"><MdBookmarkAdded className="inline mr-1 text-primary"/>Added by</h1>
-                 <p className="text-center text-md bg-background text-text p-2 mt-2"><FaUser className="inline mr-2 text-primary"/>{refUserData.cus_firstName} {refUserData.cus_lastName}
-                <br/>
-                <span className="text-center text-xs">{toCamelCase(refUserData.role)}</span>
-                </p>
-                <p className="text-center text-sm py-2"><FaEnvelopeCircleCheck className="inline mr-2 text-primary"/>{refUserData.cus_email}</p>
-                <p className="text-center text-sm"><FaPhone className="inline mr-2 text-primary"/>{refUserData.cus_phone}</p>
-              </div>
-            )}
+                {editMode && isUserProfile !== true && (
+                <div className="w-full max-w-4xl mx-auto mt-6">
+                  <div className="flex justify-end">
+                  <button
+                    onClick={handleSubmit}
+                    className="bg-background text-text px-4 py-2 rounded-lg "
+                    disabled={isLoading || isUpdating}
+                  >
+                    {isLoading || isUpdating ? "Updating..." : "Update"}
+                  </button>
+                  </div>
+                </div>
+                )}
+                
+                <div className="grid gris-cols-1 md:grid-cols-2 gap-6 mt-6">
+                {refUserData && (
+                  <div className="w-full px-4 py-2.5 border border-neutral-300 rounded-lg dark:bg-gray-700 dark:text-white">
+                  <h1 className="text-center text-xl"><MdBookmarkAdded className="inline mr-1 text-primary"/>Added by</h1>
+                   <p className="text-center text-md bg-background text-text p-2 mt-2"><FaUser className="inline mr-2 text-primary"/>{refUserData.cus_firstName} {refUserData.cus_lastName}
+                  <br/>
+                  <span className="text-center text-xs">{toCamelCase(refUserData.role)}</span>
+                  </p>
+                  <p className="text-center text-sm py-2"><FaEnvelopeCircleCheck className="inline mr-2 text-primary"/>{refUserData.cus_email}</p>
+                  <p className="text-center text-sm"><FaPhone className="inline mr-2 text-primary"/>{refUserData.cus_phone}</p>
+                  </div>
+                )}
 
-            {editedByUserData && (
-              <div className="w-full px-4 py-2.5 border border-neutral-300 rounded-lg dark:bg-gray-700 dark:text-white">
-                <h1 className="text-center text-xl"><MdBookmarkAdded className="inline mr-1 text-primary"/>Edited by</h1>
-                <p className="text-center text-md bg-background text-text p-2 mt-2"><FaUser className="inline mr-2 text-primary"/>{editedByUserData.cus_firstName} {editedByUserData.cus_lastName}
-                <br/>
-                <span className="text-center text-xs">{toCamelCase(editedByUserData.role)}</span>
-                </p>
-                <p className="text-center text-sm py-2"><FaEnvelopeCircleCheck className="inline mr-2 text-primary"/>{editedByUserData.cus_email}</p>
-                <p className="text-center text-sm"><FaPhone className="inline mr-2 text-primary"/>{editedByUserData.cus_phone}</p>
+                {editedByUserData && isUserProfile !== true && (
+                  <div className="w-full px-4 py-2.5 border border-neutral-300 rounded-lg dark:bg-gray-700 dark:text-white">
+                  <h1 className="text-center text-xl"><MdBookmarkAdded className="inline mr-1 text-primary"/>Edited by</h1>
+                  <p className="text-center text-md bg-background text-text p-2 mt-2"><FaUser className="inline mr-2 text-primary"/>{editedByUserData.cus_firstName} {editedByUserData.cus_lastName}
+                  <br/>
+                  <span className="text-center text-xs">{toCamelCase(editedByUserData.role)}</span>
+                  </p>
+                  <p className="text-center text-sm py-2"><FaEnvelopeCircleCheck className="inline mr-2 text-primary"/>{editedByUserData.cus_email}</p>
+                  <p className="text-center text-sm"><FaPhone className="inline mr-2 text-primary"/>{editedByUserData.cus_phone}</p>
+                  </div>
+                )}
+                </div>
               </div>
-            )}
-          </div>
-        </div>
-      )}
+              )}
 
       {!editMode && (
         <div className="w-full max-w-4xl mx-auto">
@@ -919,7 +920,7 @@ function toCamelCase(str) {
         </div>
       )}
 
-      {editMode && userRole === 'admin' && (
+      {editMode && userRole === 'admin' && isUserProfile !== true && (
         <div className="w-full max-w-4xl mx-auto mt-8 border-t pt-8">
           <div className="flex flex-col items-center">
             <h3 className="text-xl font-semibold text-red-600 dark:text-red-400 mb-4">Danger Zone</h3>

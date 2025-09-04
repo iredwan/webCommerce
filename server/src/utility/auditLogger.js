@@ -197,3 +197,288 @@ export const logImageDeletion = async (req, imageName, productId = null) => {
     severity: 'LOW'
   });
 };
+
+/**
+ * Create an audit log entry for order operations
+ * @param {Object} logData - Audit log data
+ * @returns {Promise} - Audit log entry
+ */
+export const createOrderAuditLog = async (logData) => {
+  try {
+    const {
+      action,
+      modelId,
+      userId,
+      userEmail,
+      changes,
+      oldValues,
+      newValues,
+      ipAddress,
+      userAgent,
+      description,
+      severity = 'LOW'
+    } = logData;
+
+    return await AuditLog.createLog({
+      action,
+      model: 'Order',
+      modelId,
+      userId,
+      userEmail,
+      changes,
+      oldValues,
+      newValues,
+      ipAddress,
+      userAgent,
+      description,
+      severity
+    });
+  } catch (error) {
+    console.error('Failed to create order audit log:', error);
+    // Don't throw error as audit logging should not break main functionality
+    return null;
+  }
+};
+
+/**
+ * Create audit log for order creation
+ */
+export const logOrderCreation = async (req, order) => {
+  const userInfo = extractUserInfo(req);
+  
+  return await createOrderAuditLog({
+    action: 'CREATE',
+    modelId: order._id,
+    ...userInfo,
+    newValues: {
+      orderNumber: order.orderNumber,
+      user: order.user,
+      totalPrice: order.totalPrice,
+      deliveryStatus: order.deliveryStatus,
+      paymentStatus: order.payment?.status,
+      itemsCount: order.items?.length || 0
+    },
+    description: `Created order: ${order.orderNumber} for amount ${order.totalPrice}`,
+    severity: 'LOW'
+  });
+};
+
+/**
+ * Create audit log for order update
+ */
+export const logOrderUpdate = async (req, oldOrder, newOrder) => {
+  const userInfo = extractUserInfo(req);
+  
+  // Identify changed fields
+  const changes = [];
+  const oldValues = {};
+  const newValues = {};
+  
+  // Compare key fields
+  const fieldsToCheck = ['deliveryStatus', 'totalPrice', 'note', 'shipping', 'payment'];
+  
+  fieldsToCheck.forEach(field => {
+    if (field === 'payment' && oldOrder.payment?.status !== newOrder.payment?.status) {
+      changes.push('payment.status');
+      oldValues['payment.status'] = oldOrder.payment?.status;
+      newValues['payment.status'] = newOrder.payment?.status;
+    } else if (field === 'shipping') {
+      // Check shipping fields
+      if (JSON.stringify(oldOrder.shipping) !== JSON.stringify(newOrder.shipping)) {
+        changes.push('shipping');
+        oldValues.shipping = oldOrder.shipping;
+        newValues.shipping = newOrder.shipping;
+      }
+    } else if (oldOrder[field] !== newOrder[field]) {
+      changes.push(field);
+      oldValues[field] = oldOrder[field];
+      newValues[field] = newOrder[field];
+    }
+  });
+  
+  return await createOrderAuditLog({
+    action: 'UPDATE',
+    modelId: newOrder._id,
+    ...userInfo,
+    oldValues,
+    newValues,
+    changes,
+    description: `Updated order ${newOrder.orderNumber}: ${changes.join(', ')}`,
+    severity: 'LOW'
+  });
+};
+
+/**
+ * Create audit log for order deletion
+ */
+export const logOrderDeletion = async (req, order) => {
+  const userInfo = extractUserInfo(req);
+  
+  return await createOrderAuditLog({
+    action: 'DELETE',
+    modelId: order._id,
+    ...userInfo,
+    oldValues: {
+      orderNumber: order.orderNumber,
+      totalPrice: order.totalPrice,
+      deliveryStatus: order.deliveryStatus
+    },
+    description: `Deleted order: ${order.orderNumber}`,
+    severity: 'MEDIUM'
+  });
+};
+
+/**
+ * Create audit log for order status change
+ */
+export const logOrderStatusChange = async (req, order, oldStatus, newStatus) => {
+  const userInfo = extractUserInfo(req);
+  
+  return await createOrderAuditLog({
+    action: 'UPDATE',
+    modelId: order._id,
+    ...userInfo,
+    oldValues: { deliveryStatus: oldStatus },
+    newValues: { deliveryStatus: newStatus },
+    changes: ['deliveryStatus'],
+    description: `Order ${order.orderNumber} status changed: ${oldStatus} → ${newStatus}`,
+    severity: newStatus === 'cancelled' ? 'MEDIUM' : 'LOW'
+  });
+};
+
+/**
+ * Create an audit log entry for invoice operations
+ * @param {Object} logData - Audit log data
+ * @returns {Promise} - Audit log entry
+ */
+export const createInvoiceAuditLog = async (logData) => {
+  try {
+    const {
+      action,
+      modelId,
+      userId,
+      userEmail,
+      changes,
+      oldValues,
+      newValues,
+      ipAddress,
+      userAgent,
+      description,
+      severity = 'LOW'
+    } = logData;
+
+    return await AuditLog.createLog({
+      action,
+      model: 'Invoice',
+      modelId,
+      userId,
+      userEmail,
+      changes,
+      oldValues,
+      newValues,
+      ipAddress,
+      userAgent,
+      description,
+      severity
+    });
+  } catch (error) {
+    console.error('Failed to create invoice audit log:', error);
+    // Don't throw error as audit logging should not break main functionality
+    return null;
+  }
+};
+
+/**
+ * Create audit log for invoice creation
+ */
+export const logInvoiceCreation = async (req, invoice) => {
+  const userInfo = extractUserInfo(req);
+  
+  return await createInvoiceAuditLog({
+    action: 'CREATE',
+    modelId: invoice._id,
+    ...userInfo,
+    newValues: {
+      invoiceNumber: invoice.invoiceNumber,
+      user: invoice.user,
+      totalAmount: invoice.totalAmount,
+      status: invoice.status,
+      paymentStatus: invoice.paymentStatus,
+      itemsCount: invoice.items?.length || 0
+    },
+    description: `Created invoice: ${invoice.invoiceNumber} for amount ${invoice.totalAmount}`,
+    severity: 'LOW'
+  });
+};
+
+/**
+ * Create audit log for invoice update
+ */
+export const logInvoiceUpdate = async (req, oldInvoice, newInvoice) => {
+  const userInfo = extractUserInfo(req);
+  
+  // Identify changed fields
+  const changes = [];
+  const oldValues = {};
+  const newValues = {};
+  
+  // Compare key fields
+  const fieldsToCheck = ['status', 'paymentStatus', 'totalAmount', 'paidAmount', 'notes', 'terms'];
+  
+  fieldsToCheck.forEach(field => {
+    if (oldInvoice[field] !== newInvoice[field]) {
+      changes.push(field);
+      oldValues[field] = oldInvoice[field];
+      newValues[field] = newInvoice[field];
+    }
+  });
+  
+  return await createInvoiceAuditLog({
+    action: 'UPDATE',
+    modelId: newInvoice._id,
+    ...userInfo,
+    oldValues,
+    newValues,
+    changes,
+    description: `Updated invoice ${newInvoice.invoiceNumber}: ${changes.join(', ')}`,
+    severity: 'LOW'
+  });
+};
+
+/**
+ * Create audit log for invoice deletion
+ */
+export const logInvoiceDeletion = async (req, invoice) => {
+  const userInfo = extractUserInfo(req);
+  
+  return await createInvoiceAuditLog({
+    action: 'DELETE',
+    modelId: invoice._id,
+    ...userInfo,
+    oldValues: {
+      invoiceNumber: invoice.invoiceNumber,
+      totalAmount: invoice.totalAmount,
+      status: invoice.status
+    },
+    description: `Deleted invoice: ${invoice.invoiceNumber}`,
+    severity: 'MEDIUM'
+  });
+};
+
+/**
+ * Create audit log for invoice status change
+ */
+export const logInvoiceStatusChange = async (req, invoice, oldStatus, newStatus) => {
+  const userInfo = extractUserInfo(req);
+  
+  return await createInvoiceAuditLog({
+    action: 'UPDATE',
+    modelId: invoice._id,
+    ...userInfo,
+    oldValues: { status: oldStatus },
+    newValues: { status: newStatus },
+    changes: ['status'],
+    description: `Invoice ${invoice.invoiceNumber} status changed: ${oldStatus} → ${newStatus}`,
+    severity: newStatus === 'cancelled' ? 'MEDIUM' : 'LOW'
+  });
+};
